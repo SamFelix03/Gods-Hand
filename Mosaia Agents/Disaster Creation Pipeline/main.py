@@ -40,12 +40,28 @@ def get_bounding_box(disaster_data):
 
     return response.choices[0].message.content.strip()
 
+def get_weather_data(bbox_output):
+    client = OpenAI(
+        base_url="https://api.mosaia.ai/v1/agent",
+        api_key=os.getenv("weatheragent")
+    )
+
+    response = client.chat.completions.create(
+        model="6864dd95ade4d61675d45e4d",
+        messages=[{"role": "user", "content": f"```json\n{bbox_output}\n```"}],
+    )
+
+    return response.choices[0].message.content.strip()
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
     
     bbox_output = get_bounding_box(disaster_data)
     print("\nBounding Box:\n", bbox_output)
+    
+    weather_data = get_weather_data(bbox_output)
+    print("\nWeather Data:\n", weather_data)
 
 if __name__ == "__main__":
     main()
