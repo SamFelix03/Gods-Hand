@@ -50,4 +50,9 @@ contract GodsHand {
         }
         return total;
     }
+
+    function getDisasterDetails(bytes32 _disasterHash) public view returns (string memory, uint256, address) {
+        Disaster memory d = disasters[_disasterHash];
+        return (d.title, d.targetAmount, d.creator);
+    }
 }
