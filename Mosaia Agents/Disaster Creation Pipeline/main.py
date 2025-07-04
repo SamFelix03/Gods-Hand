@@ -27,14 +27,25 @@ def parse_disaster_info(disaster_output):
         "location": lines[3].replace("Disaster Location: ", "").strip()
     }
 
+def get_bounding_box(disaster_data):
+    client = OpenAI(
+        base_url="https://api.mosaia.ai/v1/agent",
+        api_key=os.getenv("bboxagent")
+    )
+
+    response = client.chat.completions.create(
+        model="6864d6cbca5744854d34c998",
+        messages=[{"role": "user", "content": f"🚨 **{disaster_data['title']}** 🚨 {disaster_data['description']} 🔗 [Read more]({disaster_data['read_more']})"}],
+    )
+
+    return response.choices[0].message.content.strip()
+
 def main():
     disaster_output = get_disaster_info()
-    print("Raw Disaster Info:\n", disaster_output)
-    
     disaster_data = parse_disaster_info(disaster_output)
-    print("\nParsed Disaster Data:")
-    for key, value in disaster_data.items():
-        print(f"{key}: {value}")
+    
+    bbox_output = get_bounding_box(disaster_data)
+    print("\nBounding Box:\n", bbox_output)
 
 if __name__ == "__main__":
     main()
