@@ -22,6 +22,11 @@ contract GodsHand {
     event DisasterCreated(bytes32 indexed disasterHash, string title, address indexed creator, uint256 targetAmount);
     event DonationMade(bytes32 indexed disasterHash, address indexed donor, uint256 amount);
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+
     constructor() {
         owner = msg.sender;
     }
@@ -55,4 +60,10 @@ contract GodsHand {
         Disaster memory d = disasters[_disasterHash];
         return (d.title, d.targetAmount, d.creator);
     }
+
+    function withdraw() public onlyOwner {
+        payable(owner).transfer(address(this).balance);
+    }
+
+    receive() external payable {}
 }
