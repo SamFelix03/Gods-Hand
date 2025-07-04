@@ -1,0 +1,27 @@
+{
+  "name": "mosaia-tools-starter",
+  "version": "0.0.1",
+  "description": "A hello-world implementation of a tool that can be used my Mosaia's agents",
+  "author": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start:dev": "npm run build && node bin/dev.js",
+    "test:request": "curl -XGET \"http://localhost:3000?content=Hello%20from%20the%20Mosaia%20X%20Tool!\" && echo",
+    "validate:manifest": "node bin/validate-manifest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.11",
+    "@types/node-fetch": "^2.5.12",
+    "ajv": "^8.12.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "twitter-api-v2": "^1.16.0"
+  },
+  "license": "ISC"
+}

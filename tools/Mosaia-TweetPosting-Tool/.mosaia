@@ -1,0 +1,29 @@
+{
+    "name": "Post to X Tool",
+    "description": "A tool that posts a given text as a tweet on X (Twitter) using the Twitter API.",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "postToX",
+            "description": "Posts the provided content as a tweet on X (Twitter).",
+            "strict": true,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "The text content to post as a tweet."
+                    }
+                },
+                "required": ["content"],
+                "additionalProperties": false
+            }
+        }
+    },
+    "envVars": [
+        "TWITTER_APP_KEY",
+        "TWITTER_APP_SECRET",
+        "TWITTER_ACCESS_TOKEN",
+        "TWITTER_ACCESS_SECRET"
+    ]
+}
