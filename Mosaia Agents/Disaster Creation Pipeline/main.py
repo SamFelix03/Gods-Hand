@@ -18,9 +18,23 @@ def get_disaster_info():
 
     return response.choices[0].message.content.strip()
 
+def parse_disaster_info(disaster_output):
+    lines = disaster_output.split('\n')
+    return {
+        "title": lines[0].replace("Title: ", "").strip(),
+        "description": lines[1].replace("Description: ", "").strip(),
+        "read_more": lines[2].replace("Read More: ", "").strip(),
+        "location": lines[3].replace("Disaster Location: ", "").strip()
+    }
+
 def main():
-    disaster_info = get_disaster_info()
-    print("Disaster Info:\n", disaster_info)
+    disaster_output = get_disaster_info()
+    print("Raw Disaster Info:\n", disaster_output)
+    
+    disaster_data = parse_disaster_info(disaster_output)
+    print("\nParsed Disaster Data:")
+    for key, value in disaster_data.items():
+        print(f"{key}: {value}")
 
 if __name__ == "__main__":
     main()
