@@ -41,4 +41,13 @@ contract GodsHand {
         disasterDonations[_disasterHash].push(Donation(msg.sender, msg.value, block.timestamp));
         emit DonationMade(_disasterHash, msg.sender, msg.value);
     }
+
+    function getDisasterFunds(bytes32 _disasterHash) public view returns (uint256) {
+        Donation[] memory donations = disasterDonations[_disasterHash];
+        uint256 total = 0;
+        for (uint256 i = 0; i < donations.length; i++) {
+            total += donations[i].amount;
+        }
+        return total;
+    }
 }
