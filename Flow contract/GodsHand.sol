@@ -106,7 +106,10 @@ contract GodsHand {
         require(address(this).balance >= _amount, "Insufficient contract balance");
         _recipient.transfer(_amount);
         emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
-    }    
+    }
+    function getContractBalance() public view returns (uint256) {
+        return address(this).balance;
+    }        
 
     receive() external payable {}
 }
