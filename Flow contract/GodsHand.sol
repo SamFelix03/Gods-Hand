@@ -116,6 +116,9 @@ contract GodsHand {
         if (d.targetAmount == 0) return 0;
         return (donated * 100) / d.targetAmount;
     }
+    function emergencyWithdraw() public onlyOwner {
+        payable(owner).transfer(address(this).balance);
+    }
 
     receive() external payable {}
 }
