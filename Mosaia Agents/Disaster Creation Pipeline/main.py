@@ -1,6 +1,7 @@
 import os
 import re
 import requests
+import boto3
 from dotenv import load_dotenv
 from openai import OpenAI
 from web3 import Web3
@@ -18,6 +19,11 @@ FLOW_CHAIN_ID = int(os.getenv("FLOW_CHAIN_ID", "545"))
 FLOW_CONTRACT_ADDRESS = os.getenv("FLOW_CONTRACT_ADDRESS")
 FLOW_ACCOUNT_ADDRESS = os.getenv("FLOW_ACCOUNT_ADDRESS")
 FLOW_PRIVATE_KEY = os.getenv("FLOW_PRIVATE_KEY")
+
+# AWS Configuration
+AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = os.getenv("AWS_REGION")
 
 # Contract ABI (from call.py, only needed functions)
 CONTRACT_ABI = [
@@ -204,6 +210,14 @@ def post_to_twitter(tweet_text):
 
     return response.choices[0].message.content
 
+def init_dynamodb():
+    return boto3.resource(
+        'dynamodb',
+        aws_access_key_id=AWS_ACCESS_KEY,
+        aws_secret_access_key=AWS_SECRET_KEY,
+        region_name=AWS_REGION
+    )
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -238,6 +252,10 @@ def main():
     
     twitter_response = post_to_twitter(tweet_text)
     print("\nTwitter Response:\n", twitter_response)
+    
+    # Initialize DynamoDB
+    dynamodb = init_dynamodb()
+    print("\nDynamoDB initialized successfully")
 
 if __name__ == "__main__":
     main()
