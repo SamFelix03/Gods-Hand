@@ -1,10 +1,14 @@
 import os
 import re
+import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
+
+# CoinMarketCap API Key
+CMC_API_KEY = os.getenv("X_CMC_PRO_API_KEY")
 
 def get_disaster_info():
     client = OpenAI(
@@ -72,6 +76,25 @@ def extract_amount(analysis_output):
     amount_match = re.search(r"AMOUNT:\s*[\$]?(?P<amount>[\d,]+)", analysis_output)
     return amount_match.group("amount").replace(",", "") if amount_match else "Unknown"
 
+def get_flow_price():
+    try:
+        cmc_url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=FLOW&convert=USD"
+        headers = {"X-CMC_PRO_API_KEY": CMC_API_KEY}
+        resp = requests.get(cmc_url, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        flow_tokens = data["data"]["FLOW"]
+        flow_token = next((t for t in flow_tokens if t["quote"]["USD"]["price"]), None)
+        return float(flow_token["quote"]["USD"]["price"])
+    except Exception as e:
+        print(f"[ERROR] Could not fetch FLOW price: {e}")
+        return None
+
+def convert_to_flow(usd_amount, flow_price):
+    if usd_amount == "Unknown" or flow_price is None:
+        return None
+    return float(usd_amount) / flow_price
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -82,8 +105,15 @@ def main():
     analysis_output = get_financial_analysis(disaster_data, weather_data)
     amount_required = extract_amount(analysis_output)
     
+    flow_price = get_flow_price()
+    flow_amount = convert_to_flow(amount_required, flow_price)
+    
     print("\nFinancial Analysis:\n", analysis_output)
-    print("\nAmount Required:", f"${amount_required}" if amount_required != "Unknown" else "Unknown")
+    print("\nAmount required in USD:", f"${amount_required}" if amount_required != "Unknown" else "Unknown")
+    
+    if flow_price and flow_amount:
+        print(f"Current FLOW price (USD): ${flow_price}")
+        print(f"Amount required in FLOW: {flow_amount:.6f}")
 
 if __name__ == "__main__":
     main()
