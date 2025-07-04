@@ -110,6 +110,12 @@ contract GodsHand {
     function getContractBalance() public view returns (uint256) {
         return address(this).balance;
     }        
+    function getFundingProgress(bytes32 _disasterHash) public view returns (uint256) {
+        Disaster memory d = disasters[_disasterHash];
+        uint256 donated = getDisasterFunds(_disasterHash);
+        if (d.targetAmount == 0) return 0;
+        return (donated * 100) / d.targetAmount;
+    }
 
     receive() external payable {}
 }
