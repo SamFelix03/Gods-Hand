@@ -64,6 +64,8 @@ contract GodsHand {
         }
         return total;
     }
+    function getDonorContribution(bytes32 _disasterHash, address _donor) public view returns (uint256) {
+        return donorContributions[_disasterHash][_donor];    
 
     function getDisasterDetails(bytes32 _disasterHash) public view returns (string memory, uint256, address, bool) {
         Disaster memory d = disasters[_disasterHash];
