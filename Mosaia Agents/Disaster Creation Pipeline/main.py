@@ -3,12 +3,48 @@ import re
 import requests
 from dotenv import load_dotenv
 from openai import OpenAI
+from web3 import Web3
 
 # Load environment variables
 load_dotenv()
 
 # CoinMarketCap API Key
 CMC_API_KEY = os.getenv("X_CMC_PRO_API_KEY")
+
+# Flow EVM/Contract config from .env
+FLOW_RPC_URL = os.getenv("FLOW_RPC_URL")
+FLOW_CHAIN_ID = int(os.getenv("FLOW_CHAIN_ID", "545"))
+FLOW_CONTRACT_ADDRESS = os.getenv("FLOW_CONTRACT_ADDRESS")
+FLOW_ACCOUNT_ADDRESS = os.getenv("FLOW_ACCOUNT_ADDRESS")
+FLOW_PRIVATE_KEY = os.getenv("FLOW_PRIVATE_KEY")
+
+# Contract ABI (from call.py, only needed functions)
+CONTRACT_ABI = [
+    {
+        "inputs": [
+            {"internalType": "string", "name": "_title", "type": "string"},
+            {"internalType": "string", "name": "_metadata", "type": "string"},
+            {"internalType": "uint256", "name": "_targetAmount", "type": "uint256"}
+        ],
+        "name": "createDisaster",
+        "outputs": [
+            {"internalType": "bytes32", "name": "", "type": "bytes32"}
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "bytes32", "name": "disasterHash", "type": "bytes32"},
+            {"indexed": False, "internalType": "string", "name": "title", "type": "string"},
+            {"indexed": True, "internalType": "address", "name": "creator", "type": "address"},
+            {"indexed": False, "internalType": "uint256", "name": "targetAmount", "type": "uint256"}
+        ],
+        "name": "DisasterCreated",
+        "type": "event"
+    }
+]
 
 def get_disaster_info():
     client = OpenAI(
