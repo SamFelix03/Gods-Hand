@@ -464,6 +464,23 @@ while True:
                         disaster_data = parse_disaster_info(disaster_output)
                         validate_disaster_data(disaster_data)
                         print("✔ Disaster data validated:", disaster_data['title'])
+                            while True:
+        try:
+            print("\n=== Starting disaster processing ===")
+            
+            print("\n[1/7] Fetching disaster info...")
+            disaster_output = get_with_retry(get_disaster_info)
+            disaster_data = parse_disaster_info(disaster_output)
+            validate_disaster_data(disaster_data)
+            print("✔ Disaster data validated:", disaster_data['title'])
+            
+            print("\n[2/7] Getting bounding box...")
+            bbox_output = get_with_retry(lambda: get_bounding_box(disaster_data))
+            print("✔ Bounding box data:", bbox_output[:50] + "...")
+            
+            print("\n[3/7] Fetching weather data...")
+            weather_data = get_with_retry(lambda: get_weather_data(bbox_output))
+            print("✔ Weather data retrieved")
                     time.sleep(3600)
                     if __name__ == "__main__":
                         main()
