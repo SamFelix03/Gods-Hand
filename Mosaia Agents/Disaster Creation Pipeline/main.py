@@ -326,6 +326,58 @@ def main():
         disaster_hash
     )
     print("\n✅ Stored in DynamoDB with ID:", db_item["id"])
+    while True:
+        try:
+            disaster_output = get_disaster_info()
+            disaster_data = parse_disaster_info(disaster_output)
+            
+            bbox_output = get_bounding_box(disaster_data)
+            weather_data = get_weather_data(bbox_output)
+            
+            analysis_output = get_financial_analysis(disaster_data, weather_data)
+            amount_required = extract_amount(analysis_output)
+            
+            flow_price = get_flow_price()
+            flow_amount = convert_to_flow(amount_required, flow_price)
+            
+            print("\nFinancial Analysis:\n", analysis_output)
+            print("\nAmount required in USD:", f"${amount_required}" if amount_required != "Unknown" else "Unknown")
+            
+            disaster_hash = None
+            if flow_price and flow_amount:
+                print(f"Current FLOW price (USD): ${flow_price}")
+                print(f"Amount required in FLOW: {flow_amount:.6f}")
+                
+                disaster_hash = create_disaster_contract(
+                    disaster_data["title"],
+                    disaster_data["description"],
+                    flow_amount
+                )
+                
+                if disaster_hash:
+                    print(f"[Blockchain] Disaster created with hash: {disaster_hash}")
+            
+            tweet_text = generate_tweet(disaster_data, amount_required)
+            print("\nTweet:\n", tweet_text)
+            
+            twitter_response = post_to_twitter(tweet_text)
+            print("\nTwitter Response:\n", twitter_response)
+            
+            # Store in DynamoDB
+            db_item = store_in_dynamodb(
+                disaster_data,
+                amount_required,
+                flow_amount,
+                disaster_hash
+            )
+            print("\n✅ Stored in DynamoDB with ID:", db_item["id"])
+            
+        except Exception as e:
+            print(f"[ERROR] Exception in main loop: {e}")
+        
+        print("\n[INFO] Sleeping for 1 hour before next run...\n")
+        time.sleep(3600)
+
 
 if __name__ == "__main__":
     main()
