@@ -74,6 +74,14 @@ contract GodsHand {
         disasters[_disasterHash].isActive = !disasters[_disasterHash].isActive;
         emit DisasterStatusChanged(_disasterHash, disasters[_disasterHash].isActive);
     }
+        function getAllDisasterHashes() public view returns (bytes32[] memory) {
+        return allDisasterHashes;
+    }
+
+    function getTotalDisasters() public view returns (uint256) {
+        return allDisasterHashes.length;
+    }
+
 
     function withdraw() public onlyOwner {
         payable(owner).transfer(address(this).balance);
