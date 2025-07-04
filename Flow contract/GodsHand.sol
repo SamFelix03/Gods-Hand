@@ -8,6 +8,7 @@ contract GodsHand {
         string title;
         uint256 targetAmount;
         address creator;
+        bool isActive;
     }
 
     struct Donation {
@@ -21,6 +22,7 @@ contract GodsHand {
 
     event DisasterCreated(bytes32 indexed disasterHash, string title, address indexed creator, uint256 targetAmount);
     event DonationMade(bytes32 indexed disasterHash, address indexed donor, uint256 amount);
+    event DisasterStatusChanged(bytes32 indexed disasterHash, bool isActive);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");
@@ -35,7 +37,7 @@ contract GodsHand {
         require(bytes(_title).length > 0, "Title required");
         require(_targetAmount > 0, "Target must be > 0");
         bytes32 disasterHash = keccak256(abi.encodePacked(_title, msg.sender, block.timestamp));
-        disasters[disasterHash] = Disaster(_title, _targetAmount, msg.sender);
+        disasters[disasterHash] = Disaster(_title, _targetAmount, msg.sender, true);
         emit DisasterCreated(disasterHash, _title, msg.sender, _targetAmount);
         return disasterHash;
     }
@@ -43,6 +45,7 @@ contract GodsHand {
     function donateToDisaster(bytes32 _disasterHash) public payable {
         require(msg.value > 0, "Donation must be > 0");
         require(disasters[_disasterHash].creator != address(0), "Disaster does not exist");
+        require(disasters[_disasterHash].isActive, "Disaster is not active");
         disasterDonations[_disasterHash].push(Donation(msg.sender, msg.value, block.timestamp));
         emit DonationMade(_disasterHash, msg.sender, msg.value);
     }
@@ -56,9 +59,15 @@ contract GodsHand {
         return total;
     }
 
-    function getDisasterDetails(bytes32 _disasterHash) public view returns (string memory, uint256, address) {
+    function getDisasterDetails(bytes32 _disasterHash) public view returns (string memory, uint256, address, bool) {
         Disaster memory d = disasters[_disasterHash];
-        return (d.title, d.targetAmount, d.creator);
+        return (d.title, d.targetAmount, d.creator, d.isActive);
+    }
+
+    function toggleDisasterStatus(bytes32 _disasterHash) public onlyOwner {
+        require(disasters[_disasterHash].creator != address(0), "Disaster does not exist");
+        disasters[_disasterHash].isActive = !disasters[_disasterHash].isActive;
+        emit DisasterStatusChanged(_disasterHash, disasters[_disasterHash].isActive);
     }
 
     function withdraw() public onlyOwner {
