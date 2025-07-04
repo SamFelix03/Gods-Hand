@@ -5,9 +5,14 @@
 
 **God's Hand** is a revolutionary decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
 
-In a world where natural disasters strike without warning, traditional relief systems often fail due to bureaucratic delays, lack of transparency, and inefficient fund allocation. God's Hand transforms this paradigm by deploying autonomous AI agents that continuously monitor global events, instantly assess disaster situations, and facilitate rapid, transparent, and democratically-governed relief funding.
+In a world where natural disasters strike without warning, traditional relief systems often fail due to..
+- bureaucratic delays
+- lack of transparency
+- inefficient fund allocation.
 
-Powered by **MOSAIA AI agents** running on Phala's Trusted Execution Environments (TEE), our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is governed by the collective wisdom of verified global citizens, creating a truly decentralized humanitarian ecosystem.
+God's Hand transforms this paradigm by deploying **autonomous AI agents** that continuously monitor global events, instantly assess disaster situations, and facilitate **rapid, transparent, and democratically-governed relief funding**.
+
+Powered by **MOSAIA AI agents** running on **Phala's Trusted Execution Environments (TEE)**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem.
 
 ## ✨ Key Features
 
