@@ -1,4 +1,5 @@
 import os
+import re
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -67,6 +68,10 @@ def get_financial_analysis(disaster_data, weather_data):
 
     return response.choices[0].message.content.strip()
 
+def extract_amount(analysis_output):
+    amount_match = re.search(r"AMOUNT:\s*[\$]?(?P<amount>[\d,]+)", analysis_output)
+    return amount_match.group("amount").replace(",", "") if amount_match else "Unknown"
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -75,7 +80,10 @@ def main():
     weather_data = get_weather_data(bbox_output)
     
     analysis_output = get_financial_analysis(disaster_data, weather_data)
+    amount_required = extract_amount(analysis_output)
+    
     print("\nFinancial Analysis:\n", analysis_output)
+    print("\nAmount Required:", f"${amount_required}" if amount_required != "Unknown" else "Unknown")
 
 if __name__ == "__main__":
     main()
