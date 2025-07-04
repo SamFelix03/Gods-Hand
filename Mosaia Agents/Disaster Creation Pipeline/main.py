@@ -439,6 +439,31 @@ while True:
             print(f"[ERROR] Exception in main loop: {e}")
         
         print("\n[INFO] Sleeping for 1 hour before next run...\n")
-        time.sleep(3600)
-if __name__ == "__main__":
-    main()
+            def validate_disaster_data(disaster_data):
+                required_fields = ['title', 'description', 'read_more', 'location']
+                for field in required_fields:
+                    if not disaster_data.get(field):
+                        raise ValueError(f"Missing required field: {field}")
+                    
+                if len(disaster_data['title']) < 5:
+                    raise ValueError("Title is too short")
+                
+                if len(disaster_data['description']) < 20:
+                    raise ValueError("Description is too short")
+                
+                if not disaster_data['read_more'].startswith(('http://', 'https://')):
+                    raise ValueError("Invalid read_more URL")
+
+            def main():
+                while True:
+                    try:
+                        print("\n=== Starting disaster processing ===")
+                        
+                        print("\n[1/7] Fetching disaster info...")
+                        disaster_output = get_disaster_info()
+                        disaster_data = parse_disaster_info(disaster_output)
+                        validate_disaster_data(disaster_data)
+                        print("✔ Disaster data validated:", disaster_data['title'])
+                    time.sleep(3600)
+                    if __name__ == "__main__":
+                        main()
