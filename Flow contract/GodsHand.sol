@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 contract GodsHand {
     address public owner;
+    uint256 public disasterCounter;
+    bytes32[] public allDisasterHashes;
 
     struct Disaster {
         string title;
@@ -31,13 +33,16 @@ contract GodsHand {
 
     constructor() {
         owner = msg.sender;
+        disasterCounter = 0;
     }
 
     function createDisaster(string memory _title, uint256 _targetAmount) public returns (bytes32) {
         require(bytes(_title).length > 0, "Title required");
         require(_targetAmount > 0, "Target must be > 0");
-        bytes32 disasterHash = keccak256(abi.encodePacked(_title, msg.sender, block.timestamp));
+        disasterCounter++;
+        bytes32 disasterHash = keccak256(abi.encodePacked(_title, msg.sender, block.timestamp, disasterCounter));
         disasters[disasterHash] = Disaster(_title, _targetAmount, msg.sender, true);
+        allDisasterHashes.push(disasterHash);
         emit DisasterCreated(disasterHash, _title, msg.sender, _targetAmount);
         return disasterHash;
     }
