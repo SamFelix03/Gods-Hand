@@ -46,12 +46,13 @@ contract GodsHand {
         emit DisasterCreated(disasterHash, _title, msg.sender, _targetAmount);
         return disasterHash;
     }
-
+    mapping(bytes32 => mapping(address => uint256)) public donorContributions;
     function donateToDisaster(bytes32 _disasterHash) public payable {
         require(msg.value > 0, "Donation must be > 0");
         require(disasters[_disasterHash].creator != address(0), "Disaster does not exist");
         require(disasters[_disasterHash].isActive, "Disaster is not active");
         disasterDonations[_disasterHash].push(Donation(msg.sender, msg.value, block.timestamp));
+        donorContributions[_disasterHash][msg.sender] += msg.value;
         emit DonationMade(_disasterHash, msg.sender, msg.value);
     }
 
