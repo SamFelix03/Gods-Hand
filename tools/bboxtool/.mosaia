@@ -1,0 +1,28 @@
+{
+    "name": "Bounding Box Tool",
+    "description": "A tool that returns the bounding box (bbox) for a given location using the Geoapify Geocoding API.",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "getBoundingBox",
+            "description": "Returns the bounding box (bbox) and center coordinates for a given location using the Geoapify Geocoding API.",
+            "strict": true,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The place name or address to geocode."
+                    }
+                },
+                "required": [
+                    "location"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "envVars": [
+        "GEOAPIFY_API_KEY"
+    ]
+}

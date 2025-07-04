@@ -1,0 +1,26 @@
+{
+    "name": "WeatherXM BBox Weather Tool",
+    "description": "A tool that takes a bounding box (min_lat, min_lon, max_lat, max_lon) and returns weather data for up to 5 active WeatherXM stations in that area.",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "getBBoxWeather",
+            "description": "Returns weather data for up to 5 active WeatherXM stations within the specified bounding box.",
+            "strict": true,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "min_lat": { "type": "number", "description": "Minimum latitude of the bounding box." },
+                    "min_lon": { "type": "number", "description": "Minimum longitude of the bounding box." },
+                    "max_lat": { "type": "number", "description": "Maximum latitude of the bounding box." },
+                    "max_lon": { "type": "number", "description": "Maximum longitude of the bounding box." }
+                },
+                "required": ["min_lat", "min_lon", "max_lat", "max_lon"],
+                "additionalProperties": false
+            }
+        }
+    },
+    "envVars": [
+        "WEATHER_XM_API_KEY"
+    ]
+}
