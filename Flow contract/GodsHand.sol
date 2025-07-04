@@ -99,6 +99,14 @@ contract GodsHand {
         _recipient.transfer(_amount);
         emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
     }
+    function unlockFundsByCreator(bytes32 _disasterHash, uint256 _amount, address payable _recipient) public {
+        require(disasters[_disasterHash].creator == msg.sender, "Only creator");
+        require(_recipient != address(0), "Invalid recipient");
+        require(_amount > 0, "Amount must be > 0");
+        require(address(this).balance >= _amount, "Insufficient contract balance");
+        _recipient.transfer(_amount);
+        emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
+    }    
 
     receive() external payable {}
 }
