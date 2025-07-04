@@ -3,7 +3,7 @@
 
 ## 🌟 Introduction
 
-**God's Hand** is a revolutionary decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
+God's Hand is a revolutionary decentralized **disaster relief platform** that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
 
 In a world where natural disasters strike without warning, traditional relief systems often fail due to..
 - bureaucratic delays
@@ -19,38 +19,38 @@ Powered by **MOSAIA AI agents** running on **Phala's Trusted Execution Environme
 Traditional funding platforms face systemic issues that undermine their effectiveness for disaster relief:
 
 **1. Fraud & Scam Proliferation**
-- Rise of **fake campaigns** using synthetic identities and deepfake technology
-- **Fraud-as-a-Service platforms** making scam creation accessible to non-technical criminals
-- **$23 billion projected synthetic identity fraud losses** by 2030 (Deloitte, 2024)
+- Rise of fake campaigns using synthetic identities and deepfake technology
+- Fraud-as-a-Service platforms making scam creation accessible to non-technical criminals
+- $23 billion projected synthetic identity fraud losses by 2030 (Deloitte, 2024)
 
 **2. Quality Control Issues**
-- **Minimal vetting processes** for project feasibility
+- Minimal vetting processes for project feasibility
 
 **3. Governance & Transparency Gaps**
-- **No community involvement** in project direction after funding.
-- **Opaque fund allocation** with no real-time tracking.
-- **Marketing bias** favoring campaigns with better promotion over genuine need.
+- No community involvement in project direction after funding.
+- Opaque fund allocation with no real-time tracking.
+- Marketing bias favoring campaigns with better promotion over genuine need.
 
 
 ## 🔬 Why God's Hand (AI agents + Blockchain) is the Solution?
 
 **1. Transparency & Accountability**
-- **Real-time fund tracking** on Flow blockchain eliminates opacity.
-- **Immutable record keeping** prevents fund misappropriation.
-- **Smart contract automation** ensures funds are released only when conditions are met.
-- **AI-powered verification** provides instant fact-checking against misinformation.
+- Real-time fund tracking on Flow blockchain eliminates opacity.
+- Immutable record keeping prevents fund misappropriation.
+- Smart contract automation ensures funds are released only when conditions are met.
+- AI-powered verification provides instant fact-checking against misinformation.
 
 **2. Eliminating Human Bottlenecks**
-- **TEE-secured AI agents** operate 24/7 without delays
-- **Instant disaster detection** through continuous news monitoring and weather data from various weather stations.
-- **Automated fund allocation** based on objective data rather than political considerations
-- **Democratic governance** through verified voting removes single points of failure
+- TEE-secured AI agents operate 24/7 without delays
+- Instant disaster detection through continuous news monitoring and weather data from various weather stations.
+- Automated fund allocation based on objective data rather than political considerations
+- Democratic governance through verified voting removes single points of failure
 
 **3. Fraud Prevention Through Technology**
-- **zkPassport identity verification** prevents synthetic identity fraud
-- **Blockchain immutability** makes transaction manipulation impossible
-- **AI pattern recognition** detects fraudulent activities in real-time
-- **Decentralized validation** eliminates single points of corruption
+- zkPassport identity verification prevents synthetic identity fraud
+- Blockchain immutability makes transaction manipulation impossible
+- AI pattern recognition detects fraudulent activities in real-time
+- Decentralized validation eliminates single points of corruption
 
 
 ## ✨ Key Features
