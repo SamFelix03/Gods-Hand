@@ -53,15 +53,29 @@ def get_weather_data(bbox_output):
 
     return response.choices[0].message.content.strip()
 
+def get_financial_analysis(disaster_data, weather_data):
+    client = OpenAI(
+        base_url="https://api.mosaia.ai/v1/agent",
+        api_key=os.getenv("analysisagent")
+    )
+
+    analysis_input = f"🌧️ **{disaster_data['title']}**\n{disaster_data['description']}\n\n[Read more]({disaster_data['read_more']})\n\n{weather_data}"
+    response = client.chat.completions.create(
+        model="6866162ee2d11c774d448a27",
+        messages=[{"role": "user", "content": analysis_input}],
+    )
+
+    return response.choices[0].message.content.strip()
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
     
     bbox_output = get_bounding_box(disaster_data)
-    print("\nBounding Box:\n", bbox_output)
-    
     weather_data = get_weather_data(bbox_output)
-    print("\nWeather Data:\n", weather_data)
+    
+    analysis_output = get_financial_analysis(disaster_data, weather_data)
+    print("\nFinancial Analysis:\n", analysis_output)
 
 if __name__ == "__main__":
     main()
