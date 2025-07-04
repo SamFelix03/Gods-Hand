@@ -1,44 +1,16 @@
-# Mosaia Tool Starter
-A demo implementation of a Mosaia Tool.
+# WeatherXM tool
+This tool integrates WeatherXM to provide real-time, hyperlocal weather data for disaster assessment and relief planning. The data collected from WeatherXM's decentralized network of weather stations is sent to the agent.
 
-## Getting Started
-1. Register for an account on mosaia.ai
-2. Fork/copy this repo
-3. Install the GitHub app to the repo by clicking the "Launch App" button on: https://mosaia.ai/org/mosaia/app/github
-4. Fill out the `.mosaia` manifest file:
-- `TOOL_DISPLAY_NAME`: (user-facing) The name of the tool, displayed on the Mosaia Tool Registry. Must be unique.
-- `SHORT_TOOL_DESCRIPTION`: (user-facing) A one-sentence description of the tool, displayed in the Mosaia Tool Registry.
-- `LONG_TOOL_DESCRIPTION`: (llm-facing) A longer description of what the tool does.
-- `EXAMPLE_PARAM_ONE`, etc. (llm-facing): Any params you wish the LLM to pass to your tool.
-- `EXAMPLE_PARAM_ONE_DESCRIPTION`, etc.: (llm-facing) Descriptions of each param and what they're for.
-- `ENV_VAR_ONE`: (user-facing): When a user adds your tool to their agent they will be asked to supply values to the keys listed in `envVars`.
-5. Validate your `.mosaia` manifest file: `npm run validate:manifest`
-6. (Optional) test your tool locally: `npm run start:dev` in one terminal and `npm run test:request` in another. A Postman collection has also been provided with a test request.
-7. Push your changes to `main`. Once pushed, the deployment script will kick off. You should see your tool show up in `https://mosaia.ai/user/YOUR_USERNAME?tab=tools` in about a minute.
-8. Add your tool to an agent to test it out.
+## How it works:
+1. Enter the bbox values of a specific location
+2. Using the bounding box, the system queries the WeatherXM endpoint which returns a list of all weather stations located within the defined geographical bounds.
+3. The response is filtered to include only active stations, i.e., those that have reported recent weather data.
+4. Up to 5 randomly selected active stations are queried for their latest observations.
+5. Each response includes:
+- Observation data: temperature, precipitation, wind speed/gust, humidity, UV index, solar irradiance, etc.
+- Location metadata: latitude, longitude, elevation
+- Health scores: data quality, location accuracy
+6. These details provide granular, real-time insights into the current weather conditions around a specific location.
 
-## Manifest Validation
-The project includes a validation script that checks your `.mosaia` manifest file against the required schema:
-
-```bash
-npm run validate:manifest
-```
-
-This script validates:
-- **name**: Must be a string with minimum length 5, containing only alphanumeric characters and spaces
-- **description**: Must be a string with minimum length 30
-- **schema.type**: Must be "function"
-- **schema.function.name**: Must be a string with minimum length 5
-- **schema.function.description**: Must be a string with minimum length 30
-- **schema.function.strict**: Must be a boolean (optional)
-- **schema.function.parameters**: Must be a valid JSON schema object
-- **envVars**: Must be an array of strings (optional)
-
-See `.mosaia.example` for a valid manifest file structure.
-
-## Minimum requirements
-The only requirements for a Mosaia Tool are that it:
-1. contains a valid `.mosaia` file
-2. defines an npm `build` command
-3. `npm run build` emits transpiled code into a `dist` directory
-4. the entrypoint of the trainspiled code is `dist/index.js`.
+## Required Environment Variables
+1. WeatherXM API key
