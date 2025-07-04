@@ -257,5 +257,75 @@ def main():
     dynamodb = init_dynamodb()
     print("\nDynamoDB initialized successfully")
 
+def store_in_dynamodb(disaster_data, amount_required, flow_amount, disaster_hash=None):
+    dynamodb = init_dynamodb()
+    table = dynamodb.Table("gods-hand-events")
+    
+    # Generate hash if not from contract
+    if not disaster_hash:
+        disaster_hash = hashlib.sha256(
+            (disaster_data['title'] + disaster_data['location']).encode()
+        ).hexdigest()
+    
+    item = {
+        "id": str(uuid.uuid4()),
+        "title": disaster_data['title'],
+        "description": disaster_data['description'],
+        "source": disaster_data['read_more'],
+        "disaster_location": disaster_data['location'],
+        "estimated_amount_required": amount_required,
+        "estimated_amount_required_flow": f"{flow_amount:.6f}" if flow_amount else "N/A",
+        "disaster_hash": disaster_hash,
+        "created_at": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+    }
+    
+    table.put_item(Item=item)
+    return item
+
+def main():
+    disaster_output = get_disaster_info()
+    disaster_data = parse_disaster_info(disaster_output)
+    
+    bbox_output = get_bounding_box(disaster_data)
+    weather_data = get_weather_data(bbox_output)
+    
+    analysis_output = get_financial_analysis(disaster_data, weather_data)
+    amount_required = extract_amount(analysis_output)
+    
+    flow_price = get_flow_price()
+    flow_amount = convert_to_flow(amount_required, flow_price)
+    
+    print("\nFinancial Analysis:\n", analysis_output)
+    print("\nAmount required in USD:", f"${amount_required}" if amount_required != "Unknown" else "Unknown")
+    
+    disaster_hash = None
+    if flow_price and flow_amount:
+        print(f"Current FLOW price (USD): ${flow_price}")
+        print(f"Amount required in FLOW: {flow_amount:.6f}")
+        
+        disaster_hash = create_disaster_contract(
+            disaster_data["title"],
+            disaster_data["description"],
+            flow_amount
+        )
+        
+        if disaster_hash:
+            print(f"[Blockchain] Disaster created with hash: {disaster_hash}")
+    
+    tweet_text = generate_tweet(disaster_data, amount_required)
+    print("\nTweet:\n", tweet_text)
+    
+    twitter_response = post_to_twitter(tweet_text)
+    print("\nTwitter Response:\n", twitter_response)
+    
+    # Store in DynamoDB
+    db_item = store_in_dynamodb(
+        disaster_data,
+        amount_required,
+        flow_amount,
+        disaster_hash
+    )
+    print("\n✅ Stored in DynamoDB with ID:", db_item["id"])
+
 if __name__ == "__main__":
     main()
