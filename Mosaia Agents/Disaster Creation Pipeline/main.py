@@ -191,6 +191,19 @@ def generate_tweet(disaster_data, amount_required):
         f"🔗 Read more: {disaster_data['read_more']}"
     )
 
+def post_to_twitter(tweet_text):
+    client = OpenAI(
+        base_url="https://api.mosaia.ai/v1/agent",
+        api_key=os.getenv("tweetagent")
+    )
+
+    response = client.chat.completions.create(
+        model="6864e70f77520411d032518a",
+        messages=[{"role": "user", "content": f'post this content on twitter "{tweet_text}"'}],
+    )
+
+    return response.choices[0].message.content
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -222,6 +235,9 @@ def main():
     
     tweet_text = generate_tweet(disaster_data, amount_required)
     print("\nTweet:\n", tweet_text)
+    
+    twitter_response = post_to_twitter(tweet_text)
+    print("\nTwitter Response:\n", twitter_response)
 
 if __name__ == "__main__":
     main()
