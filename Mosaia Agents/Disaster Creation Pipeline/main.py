@@ -378,6 +378,67 @@ def main():
         print("\n[INFO] Sleeping for 1 hour before next run...\n")
         time.sleep(3600)
 
-
+while True:
+        try:
+            print("\n=== Starting disaster processing ===")
+            
+            print("\n[1/7] Fetching disaster info...")
+            disaster_output = get_disaster_info()
+            disaster_data = parse_disaster_info(disaster_output)
+            print("✔ Disaster data retrieved:", disaster_data['title'])
+            
+            print("\n[2/7] Getting bounding box...")
+            bbox_output = get_bounding_box(disaster_data)
+            print("✔ Bounding box data:", bbox_output[:50] + "...")
+            
+            print("\n[3/7] Fetching weather data...")
+            weather_data = get_weather_data(bbox_output)
+            print("✔ Weather data retrieved")
+            
+            print("\n[4/7] Performing financial analysis...")
+            analysis_output = get_financial_analysis(disaster_data, weather_data)
+            amount_required = extract_amount(analysis_output)
+            print("✔ Analysis complete. Amount required:", amount_required)
+            
+            print("\n[5/7] Checking FLOW price...")
+            flow_price = get_flow_price()
+            flow_amount = convert_to_flow(amount_required, flow_price)
+            
+            disaster_hash = None
+            if flow_price and flow_amount:
+                print(f"✔ FLOW price: ${flow_price}, Amount in FLOW: {flow_amount:.6f}")
+                
+                print("\n[6/7] Creating disaster contract...")
+                disaster_hash = create_disaster_contract(
+                    disaster_data["title"],
+                    disaster_data["description"],
+                    flow_amount
+                )
+                
+                if disaster_hash:
+                    print(f"✔ Disaster created with hash: {disaster_hash}")
+            
+            print("\n[7/7] Posting to Twitter...")
+            tweet_text = generate_tweet(disaster_data, amount_required)
+            twitter_response = post_to_twitter(tweet_text)
+            print("✔ Tweet posted successfully")
+            
+            # Store in DynamoDB
+            print("\n[+] Storing in DynamoDB...")
+            db_item = store_in_dynamodb(
+                disaster_data,
+                amount_required,
+                flow_amount,
+                disaster_hash
+            )
+            print("✔ Stored in DynamoDB with ID:", db_item["id"])
+            
+            print("\n=== Processing complete ===")
+            
+        except Exception as e:
+            print(f"[ERROR] Exception in main loop: {e}")
+        
+        print("\n[INFO] Sleeping for 1 hour before next run...\n")
+        time.sleep(3600)
 if __name__ == "__main__":
     main()
