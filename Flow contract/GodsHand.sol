@@ -89,6 +89,16 @@ contract GodsHand {
     function withdraw() public onlyOwner {
         payable(owner).transfer(address(this).balance);
     }
+    
+    event FundsUnlocked(bytes32 indexed disasterHash, address indexed recipient, uint256 amount, address indexed unlockedBy);
+
+    function unlockFunds(bytes32 _disasterHash, uint256 _amount, address payable _recipient) public onlyOwner {
+        require(_recipient != address(0), "Invalid recipient");
+        require(_amount > 0, "Amount must be > 0");
+        require(address(this).balance >= _amount, "Insufficient contract balance");
+        _recipient.transfer(_amount);
+        emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
+    }
 
     receive() external payable {}
 }
