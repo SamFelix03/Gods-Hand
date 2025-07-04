@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 from openai import OpenAI
 from web3 import Web3
+from eth_account import Account
 
 # Load environment variables
 load_dotenv()
@@ -131,6 +132,57 @@ def convert_to_flow(usd_amount, flow_price):
         return None
     return float(usd_amount) / flow_price
 
+def create_disaster_contract(title, description, flow_amount):
+    try:
+        web3 = Web3(Web3.HTTPProvider(FLOW_RPC_URL))
+        if not web3.is_connected():
+            raise Exception("Web3 connection failed")
+        
+        account = Account.from_key(FLOW_PRIVATE_KEY)
+        if account.address.lower() != FLOW_ACCOUNT_ADDRESS.lower():
+            raise Exception("Private key does not match account address")
+        
+        contract = web3.eth.contract(address=Web3.to_checksum_address(FLOW_CONTRACT_ADDRESS), abi=CONTRACT_ABI)
+        nonce = web3.eth.get_transaction_count(account.address)
+        
+        # Convert FLOW to wei (1 FLOW = 1e18)
+        target_amount_wei = int(flow_amount * 1e18)
+        
+        tx = contract.functions.createDisaster(
+            title,
+            description,
+            target_amount_wei
+        ).build_transaction({
+            'from': account.address,
+            'nonce': nonce,
+            'gas': 500000,
+            'gasPrice': web3.to_wei('1', 'gwei'),
+            'chainId': FLOW_CHAIN_ID
+        })
+        
+        signed_tx = web3.eth.account.sign_transaction(tx, FLOW_PRIVATE_KEY)
+        tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        print(f"\n[Blockchain] Sent createDisaster tx: {tx_hash.hex()}")
+        
+        receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        if receipt.status != 1:
+            raise Exception("Transaction failed")
+        
+        # Extract disaster hash from logs
+        for log in receipt.logs:
+            try:
+                decoded = contract.events.DisasterCreated().process_log(log)
+                return decoded['args']['disasterHash'].hex()
+            except Exception:
+                continue
+        
+        print("[Blockchain] Could not extract disaster hash from event logs.")
+        return None
+        
+    except Exception as e:
+        print(f"[ERROR] Blockchain interaction failed: {e}")
+        return None
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -150,6 +202,15 @@ def main():
     if flow_price and flow_amount:
         print(f"Current FLOW price (USD): ${flow_price}")
         print(f"Amount required in FLOW: {flow_amount:.6f}")
+        
+        disaster_hash = create_disaster_contract(
+            disaster_data["title"],
+            disaster_data["description"],
+            flow_amount
+        )
+        
+        if disaster_hash:
+            print(f"[Blockchain] Disaster created with hash: {disaster_hash}")
 
 if __name__ == "__main__":
     main()
