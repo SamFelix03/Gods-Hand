@@ -183,6 +183,14 @@ def create_disaster_contract(title, description, flow_amount):
         print(f"[ERROR] Blockchain interaction failed: {e}")
         return None
 
+def generate_tweet(disaster_data, amount_required):
+    return (
+        f"🚨 {disaster_data['title']} 🚨\n\n"
+        f"📝 {disaster_data['description']}\n\n"
+        f"💸 Amount required: ${amount_required}\n\n"
+        f"🔗 Read more: {disaster_data['read_more']}"
+    )
+
 def main():
     disaster_output = get_disaster_info()
     disaster_data = parse_disaster_info(disaster_output)
@@ -211,6 +219,9 @@ def main():
         
         if disaster_hash:
             print(f"[Blockchain] Disaster created with hash: {disaster_hash}")
+    
+    tweet_text = generate_tweet(disaster_data, amount_required)
+    print("\nTweet:\n", tweet_text)
 
 if __name__ == "__main__":
     main()
