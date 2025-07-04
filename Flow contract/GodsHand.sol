@@ -10,9 +10,17 @@ contract GodsHand {
         address creator;
     }
 
+    struct Donation {
+        address donor;
+        uint256 amount;
+        uint256 timestamp;
+    }
+
     mapping(bytes32 => Disaster) public disasters;
+    mapping(bytes32 => Donation[]) public disasterDonations;
 
     event DisasterCreated(bytes32 indexed disasterHash, string title, address indexed creator, uint256 targetAmount);
+    event DonationMade(bytes32 indexed disasterHash, address indexed donor, uint256 amount);
 
     constructor() {
         owner = msg.sender;
@@ -25,5 +33,12 @@ contract GodsHand {
         disasters[disasterHash] = Disaster(_title, _targetAmount, msg.sender);
         emit DisasterCreated(disasterHash, _title, msg.sender, _targetAmount);
         return disasterHash;
+    }
+
+    function donateToDisaster(bytes32 _disasterHash) public payable {
+        require(msg.value > 0, "Donation must be > 0");
+        require(disasters[_disasterHash].creator != address(0), "Disaster does not exist");
+        disasterDonations[_disasterHash].push(Donation(msg.sender, msg.value, block.timestamp));
+        emit DonationMade(_disasterHash, msg.sender, msg.value);
     }
 }
