@@ -363,20 +363,34 @@ export interface Event {
   source: string;
   tweet_id?: string;
   disaster_hash?: string;
+  // Lottery/Raffle fields
+  lottery_end_time?: string; // ISO timestamp when lottery ends
+  lottery_duration_hours?: number; // Default lottery duration in hours
+  lottery_winner?: string; // Address of lottery winner
+  lottery_prize_amount?: number; // Amount won in lottery
+  lottery_status?: 'pending' | 'active' | 'ended' | 'claimed'; // Status of lottery
+  lottery_transaction_hash?: string; // Transaction hash of lottery execution
 }
 
 export interface Claim {
   id: string;
   event_id: string;
-  org_id?: string;
-  organization_name?: string;
-  organization_aztec_address?: string;
+  organization_name: string;
   claimed_amount: number;
+  organization_aztec_address: string;
   reason: string;
-  claim_state: 'waiting_for_ai' | 'voting' | 'approved' | 'rejected' | 'claimed';
-  logo_url?: string;
+  claim_state: "voting" | "approved" | "rejected" | "waiting_for_ai" | "claimed" | "modified";
   created_at: string;
-  updated_at: string;
+  vote_result?: string;
+  tx_hash?: string;
+  claims_hash: string;
+  votes_summary?: {
+    accept: number;
+    reject: number;
+    raise_amount: number;
+    lower_amount: number;
+    total: number;
+  };
 }
 
 export interface ClaimWithOrganization extends Claim {
@@ -387,7 +401,10 @@ export interface ClaimWithOrganization extends Claim {
 export interface Vote {
   id: string;
   claim_id: string;
-  vote_type: 'accept' | 'reject' | 'raise_amount' | 'lower_amount';
-  voter_ip?: string; // For anonymous voting
+  disaster_hash: string;
+  organization_address: string;
+  vote_type: "accept" | "reject" | "raise_amount" | "lower_amount";
+  voter_identifier: string; // Hashed unique identifier from ZKPassport
+  timestamp: string;
   created_at: string;
 } 
