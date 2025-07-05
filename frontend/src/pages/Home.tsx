@@ -74,7 +74,7 @@ export default function Home() {
               </div>
             </div>
             <p className="hero-subtitle">
-              Where Heaven Hears, and Humanity Helps — One Anonymous Gift at a
+              Where Heaven Hears, and Humanity Helps — One Gift at a
               Time.
             </p>
             <div className="divine-buttons">
