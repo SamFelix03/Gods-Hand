@@ -7,6 +7,7 @@ import {
 } from "../lib/types/database";
 import { eventsService } from "../lib/dynamodb/events";
 import { claimsService } from "../lib/dynamodb/claims";
+import { fetchRecentDonations } from "../lib/utils";
 import Header from "./Header";
 import DivineLoader from "./DivineLoader";
 import DecryptedText from "./DecryptedText";
@@ -17,6 +18,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import RequestFundsModal from "./RequestFundsModal";
 import VotingModal from "./VotingModal";
 import ClaimModal from "./ClaimModal";
+import LotteryCountdown from "./LotteryCountdown";
+import { lotteryTimerService } from "../lib/services/lotteryTimer";
 
 interface EventDetailClientProps {
   eventId: string;
@@ -28,6 +31,13 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [claims, setClaims] = useState<ClaimWithOrganization[]>([]);
   const [loading, setLoading] = useState(true);
+  const [donations, setDonations] = useState<{
+    donor: string;
+    amount: string;
+    timestamp: string;
+    formattedTime: string;
+  }[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(false);
   const [selectedVote, setSelectedVote] = useState<{
     [claimId: string]: string;
   }>({});
@@ -100,6 +110,13 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
         }
         setEvent(eventData);
 
+        // Add event to lottery timer service
+        try {
+          await lotteryTimerService.addEvent(eventData);
+        } catch (error) {
+          console.warn("Failed to add event to lottery timer service:", error);
+        }
+
         // Fetch claims for this event
         const claimsData = await claimsService.getClaimsByEventId(eventId);
         // Filter out rejected claims - they shouldn't be visible for voting
@@ -114,6 +131,26 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
 
     fetchData();
   }, [eventId]);
+
+  // Fetch donations when event data is available
+  useEffect(() => {
+    async function loadDonations() {
+      if (!event?.disaster_hash) return;
+      
+      setDonationsLoading(true);
+      try {
+        const donationData = await fetchRecentDonations(event.disaster_hash);
+        setDonations(donationData);
+      } catch (error) {
+        console.error("Error fetching donations:", error);
+        setDonations([]); // Fall back to empty array
+      } finally {
+        setDonationsLoading(false);
+      }
+    }
+
+    loadDonations();
+  }, [event?.disaster_hash]);
 
   const handleVote = async (claimId: string, voteType: string) => {
     setSelectedVote((prev) => ({ ...prev, [claimId]: voteType }));
@@ -140,6 +177,20 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
       organizationAztecAddress: claim.organization_aztec_address || "",
       claimedAmount: claim.claimed_amount,
     });
+  };
+
+  const refreshDonations = async () => {
+    if (!event?.disaster_hash) return;
+    
+    setDonationsLoading(true);
+    try {
+      const donationData = await fetchRecentDonations(event.disaster_hash);
+      setDonations(donationData);
+    } catch (error) {
+      console.error("Error refreshing donations:", error);
+    } finally {
+      setDonationsLoading(false);
+    }
   };
 
   const getClaimStateColor = (state: string) => {
@@ -191,7 +242,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
       </div>
 
       {/* Divine Header */}
-      <Header hidden={isRequestFundsModalOpen} />
+      <Header hidden={isRequestFundsModalOpen || isDonationModalOpen} />
 
       <main
         className="relative z-10 max-w-7xl mx-auto px-6 py-8"
@@ -337,13 +388,78 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
 
                   <button
                     onClick={() => setIsDonationModalOpen(true)}
-                    className="w-full bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-['Cinzel']"
+                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-6 px-12 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] font-['Cinzel'] text-xl"
                   >
                     Donate Now
                   </button>
                 </div>
               </div>
             </div>
+
+            {/* Lottery Countdown Component */}
+            <LotteryCountdown event={event} />
+
+            {/* Approved Claims Section - Separate Important Section */}
+            {claims.filter(claim => claim.claim_state === "approved").length > 0 && (
+              <div className="mb-8 bg-gradient-to-r from-green-50/30 to-emerald-50/30 backdrop-blur-xl rounded-3xl border-2 border-green-300/50 p-8 shadow-2xl">
+                <div className="text-center mb-6">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4 font-['Cinzel'] drop-shadow-lg bg-gradient-to-b from-green-700 to-green-800 bg-clip-text text-transparent">
+                    Approved Fund Claims
+                  </h2>
+                  <p className="text-gray-800 font-['Cinzel'] text-lg font-medium">
+                    These organizations have been approved by the community to receive disaster relief funds
+                  </p>
+                </div>
+
+                <div className="space-y-6 max-h-96 overflow-y-auto">
+                  {claims
+                    .filter(claim => claim.claim_state === "approved")
+                    .map((claim) => (
+                      <div
+                        key={claim.id}
+                        className="bg-white/40 backdrop-blur-sm rounded-xl p-6 border border-green-300/50 hover:bg-white/50 transition-all duration-300 shadow-lg hover:shadow-xl"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-xl font-bold text-gray-900 font-['Cinzel'] drop-shadow-sm">
+                              {claim.organization_name || "Unknown Organization"}
+                            </h3>
+                            <div className="text-2xl font-black text-green-700 font-['Cinzel'] font-bold mt-2 drop-shadow-sm">
+                              ${claim.claimed_amount.toLocaleString()}
+                            </div>
+                          </div>
+                          <span className="px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200 font-['Cinzel'] drop-shadow-sm">
+                            ✓ Approved
+                          </span>
+                        </div>
+
+                        <p className="text-gray-800 font-['Cinzel'] text-base mb-4 leading-relaxed font-medium">
+                          {claim.reason}
+                        </p>
+
+                        {/* Claims Hash Button */}
+                        {claim.claims_hash && (
+                          <div className="mb-4">
+                            <a
+                              href={`https://evm-testnet.flowscan.io/tx/0x${claim.claims_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors font-['Cinzel'] inline-flex items-center"
+                            >
+                              Claim Hash
+                            </a>
+                          </div>
+                        )}
+
+                        <div className="mt-4 text-sm text-gray-600 font-['Cinzel'] font-medium">
+                          Approved: {formatDateTime(claim.created_at)}
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
 
             {/* Tabbed Content Section */}
             <div className="mb-8">
@@ -393,7 +509,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Fund Claims ({claims.length})
+                  Active Fund Claims ({claims.filter(claim => claim.claim_state !== "approved").length})
                 </button>
               </div>
 
@@ -433,97 +549,169 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                             DONOR_ID
                           </div>
                           <div className="font-mono text-black text-sm font-bold">
-                            AMOUNT_USD
+                            AMOUNT
                           </div>
                           <div className="font-mono text-black text-sm font-bold">
                             TIMESTAMP
                           </div>
                         </div>
 
-                        {/* Encrypted Donation Rows */}
+                        {/* Real or Loading Donation Rows */}
                         <div className="space-y-2">
-                          {[
-                            {
-                              donor: "X7K9#M2@P5L",
-                              amount: "$#@!%*&",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "Q3R8@N4$W7",
-                              amount: "*&%#$@!",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "Z9F2#K5@M8L",
-                              amount: "#$%&*@",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "B6H3@R7$Q2",
-                              amount: "@!#%*&",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "V4N8#L1@K9",
-                              amount: "*&#@%$",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "T2M7@F5#P8",
-                              amount: "%$#@!*",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "D1Q6#R3@N4",
-                              amount: "&*%#@$",
-                              time: "2024:##:##",
-                            },
-                            {
-                              donor: "S8L5@K2#M7",
-                              amount: "#@!%*&",
-                              time: "2024:##:##",
-                            },
-                          ].map((donation, index) => (
-                            <div
-                              key={index}
-                              className="grid grid-cols-3 gap-4 text-center py-1 hover:bg-gray-100/20 transition-colors rounded"
-                            >
-                              <div className="font-mono text-black text-sm">
-                                <DecryptedText
-                                  text={donation.donor}
-                                  animateOn="view"
-                                  speed={60}
-                                  maxIterations={12}
-                                  characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?"
-                                  className="font-mono text-black"
-                                  encryptedClassName="text-black"
-                                />
+                          {donationsLoading ? (
+                            // Loading state
+                            Array.from({ length: 3 }).map((_, index) => (
+                              <div
+                                key={index}
+                                className="grid grid-cols-3 gap-4 text-center py-1 animate-pulse"
+                              >
+                                <div className="font-mono text-black text-sm">
+                                  Loading...
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  Loading...
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  Loading...
+                                </div>
                               </div>
-                              <div className="font-mono text-black text-sm">
-                                <DecryptedText
-                                  text={donation.amount}
-                                  animateOn="view"
-                                  speed={80}
-                                  maxIterations={15}
-                                  characters="$@#%&*!?0123456789ABCDEF"
-                                  className="font-mono text-black"
-                                  encryptedClassName="text-black"
-                                />
+                            ))
+                          ) : donations.length > 0 ? (
+                            // Real donation data
+                            donations.slice(0, 8).map((donation, index) => (
+                              <div
+                                key={index}
+                                className="grid grid-cols-3 gap-4 text-center py-1 hover:bg-gray-100/20 transition-colors rounded"
+                              >
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.donor}
+                                    animateOn="view"
+                                    speed={60}
+                                    maxIterations={12}
+                                    characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.amount}
+                                    animateOn="view"
+                                    speed={80}
+                                    maxIterations={15}
+                                    characters="$@#%&*!?0123456789ABCDEF"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.formattedTime}
+                                    animateOn="view"
+                                    speed={70}
+                                    maxIterations={10}
+                                    characters="0123456789:#-ABCDEF"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
                               </div>
-                              <div className="font-mono text-black text-sm">
-                                <DecryptedText
-                                  text={donation.time}
-                                  animateOn="view"
-                                  speed={70}
-                                  maxIterations={10}
-                                  characters="0123456789:#-ABCDEF"
-                                  className="font-mono text-black"
-                                  encryptedClassName="text-black"
-                                />
+                            ))
+                          ) : (
+                            // No donations fallback - show encrypted placeholder
+                            [
+                              {
+                                donor: "X7K9#M2@P5L",
+                                amount: "$#@!%*&",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "Q3R8@N4$W7",
+                                amount: "*&%#$@!",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "Z9F2#K5@M8L",
+                                amount: "#$%&*@",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "B6H3@R7$Q2",
+                                amount: "@!#%*&",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "V4N8#L1@K9",
+                                amount: "*&#@%$",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "T2M7@F5#P8",
+                                amount: "%$#@!*",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "D1Q6#R3@N4",
+                                amount: "&*%#@$",
+                                time: "2024:##:##",
+                              },
+                              {
+                                donor: "S8L5@K2#M7",
+                                amount: "#@!%*&",
+                                time: "2024:##:##",
+                              },
+                            ].map((donation, index) => (
+                              <div
+                                key={index}
+                                className="grid grid-cols-3 gap-4 text-center py-1 hover:bg-gray-100/20 transition-colors rounded"
+                              >
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.donor}
+                                    animateOn="view"
+                                    speed={60}
+                                    maxIterations={12}
+                                    characters="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*!?"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.amount}
+                                    animateOn="view"
+                                    speed={80}
+                                    maxIterations={15}
+                                    characters="$@#%&*!?0123456789ABCDEF"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
+                                <div className="font-mono text-black text-sm">
+                                  <DecryptedText
+                                    text={donation.time}
+                                    animateOn="view"
+                                    speed={70}
+                                    maxIterations={10}
+                                    characters="0123456789:#-ABCDEF"
+                                    className="font-mono text-black"
+                                    encryptedClassName="text-black"
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
+
+                        {/* Show message if no real donations but not loading */}
+                        {!donationsLoading && donations.length === 0 && (
+                          <div className="text-center py-4">
+                            <p className="text-gray-600 font-['Cinzel'] text-sm italic">
+                              No donations found. The encrypted data above is for demonstration.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   ) : (
@@ -536,7 +724,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                     >
                       <h2 className="text-3xl font-bold text-gray-900 mb-8 font-['Cinzel'] flex items-center drop-shadow-sm">
                         <svg
-                          className="w-8 h-8 mr-4 text-blue-600"
+                          className="w-8 h-8 mr-4 text-amber-600"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -548,10 +736,12 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                           />
                         </svg>
-                        Fund Claims ({claims.length})
+                        Active Fund Claims ({claims.filter(claim => claim.claim_state !== "approved").length})
                       </h2>
                       <div className="space-y-6 max-h-96 overflow-y-auto">
-                        {claims.map((claim) => (
+                        {claims
+                          .filter(claim => claim.claim_state !== "approved") // Exclude approved claims
+                          .map((claim) => (
                           <div
                             key={claim.id}
                             className="bg-white/20 backdrop-blur-sm rounded-xl p-6 border border-white/30 hover:bg-white/25 transition-colors"
@@ -619,22 +809,17 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                               </div>
                             )}
 
-                            {claim.claim_state === "approved" && (
-                              <div className="mt-4 p-4 bg-green-50/50 rounded-lg border border-green-200/50">
-                                <h4 className="font-bold text-gray-900 mb-3 font-['Cinzel'] text-lg">
-                                  Funds Ready for Claim:
-                                </h4>
-                                <div className="text-center">
-                                  <button
-                                    onClick={() => openClaimModal(claim)}
-                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg transition-colors font-['Cinzel'] shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                  >
-                                    Is it you? Claim your funds now!
-                                  </button>
-                                  <p className="text-green-700 font-['Cinzel'] text-xs mt-2 italic">
-                                    Wallet verification required
-                                  </p>
-                                </div>
+                            {/* Claims Hash Button */}
+                            {claim.claims_hash && (
+                              <div className="mb-4">
+                                <a
+                                  href={`https://evm-testnet.flowscan.io/tx/0x${claim.claims_hash}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors font-['Cinzel'] inline-flex items-center"
+                                >
+                                  Claim Hash
+                                </a>
                               </div>
                             )}
 
@@ -666,9 +851,9 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
               {/* How Fund Claiming Works */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100/60 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <div className="w-16 h-16 bg-amber-100/60 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <svg
-                      className="w-8 h-8 text-blue-600"
+                      className="w-8 h-8 text-amber-600"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -763,6 +948,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
         onClose={() => setIsDonationModalOpen(false)}
         eventTitle={event?.title || "Disaster Relief Event"}
         disasterHash={event?.disaster_hash || ""}
+        refreshDonations={refreshDonations}
       />
 
       {/* Request Funds Modal */}
@@ -771,6 +957,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
         onClose={() => setIsRequestFundsModalOpen(false)}
         eventTitle={event?.title || "Disaster Relief Event"}
         eventId={event?.id || ""}
+        disasterHash={event?.disaster_hash || ""}
       />
 
       {/* Voting Modal */}
