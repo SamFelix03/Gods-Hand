@@ -1,11 +1,17 @@
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-# Load environment variables
+# Load env
 load_dotenv()
 
-def main():
-    print("Project initialized")
+app = FastAPI()
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "service": "disaster-relief-fact-checker"}
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
