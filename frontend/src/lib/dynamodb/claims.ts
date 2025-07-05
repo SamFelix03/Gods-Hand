@@ -43,13 +43,34 @@ export const claimsService = {
     }
   },
 
+  // Get claim by claims hash
+  async getClaimByHash(claimsHash: string): Promise<ClaimWithOrganization | null> {
+    try {
+      const command = new QueryCommand({
+        TableName: TABLE_NAME,
+        IndexName: "claims_hash-index",
+        KeyConditionExpression: "claims_hash = :claimsHash",
+        ExpressionAttributeValues: {
+          ":claimsHash": claimsHash,
+        },
+        Limit: 1,
+      });
+      
+      const response = await docClient.send(command);
+      const items = response.Items || [];
+      return items.length > 0 ? (items[0] as ClaimWithOrganization) : null;
+    } catch (error) {
+      console.error("Error fetching claim by hash:", error);
+      throw error;
+    }
+  },
+
   // Create a new claim
-  async createClaim(claimData: Omit<Claim, "id" | "created_at" | "updated_at">): Promise<ClaimWithOrganization> {
+  async createClaim(claimData: Omit<Claim, "id" | "created_at">): Promise<ClaimWithOrganization> {
     try {
       const newClaim: ClaimWithOrganization = {
         id: uuidv4(),
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         ...claimData,
       };
 
