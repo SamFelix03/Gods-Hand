@@ -112,6 +112,48 @@ def get_disaster_balance(disaster_hash: str):
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
 
+# === Endpoint: /fact-check ===
+@app.post("/fact-check")
+def fact_check(data: FactCheckInput):
+    try:
+        print(f"[INFO] Statement: {data.statement}")
+        print(f"[INFO] Disaster Hash: {data.disaster_hash}")
+
+        # === Get Disaster Pool Balance ===
+        balance_data = get_disaster_balance(data.disaster_hash)
+        usd_value = balance_data["usd_value"]
+
+        # === Call Mosaia Agent with statement and USD value ===
+        ai_message = (
+            f"Petition: {data.statement}\n"
+            f"Current available funds in pool: ${usd_value if usd_value is not None else 'Unknown'} USD.\n"
+            "Based on the petition and the available funds, decide how much should be allocated from the pool. "
+            "Respond with the amount to allocate, a brief reasoning, and a single source which shows that the NGO performed the work."
+        )
+        print("[INFO] Sending to AI:")
+        print(ai_message)
+        completion = client.chat.completions.create(
+            model="686656aaf14ab5c885e431ce",
+            messages=[{"role": "user", "content": ai_message}],
+        )
+        response_text = completion.choices[0].message.content.strip()
+        print("[INFO] AI Response:")
+        print(response_text)
+
+        # === Basic Response ===
+        return {
+            "statement": data.statement,
+            "disaster_hash": data.disaster_hash,
+            "flow_balance": balance_data["flow_balance"],
+            "usd_value": balance_data["usd_value"],
+            "ai_response": response_text
+        }
+
+    except Exception as e:
+        print(f"[ERROR] Main exception: {e}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "disaster-relief-fact-checker"}
@@ -137,17 +179,6 @@ def blockchain_status():
 @app.get("/disaster-balance/{disaster_hash}")
 def disaster_balance(disaster_hash: str):
     return get_disaster_balance(disaster_hash)
-
-@app.get("/test-ai")
-def test_ai():
-    try:
-        completion = client.chat.completions.create(
-            model="686656aaf14ab5c885e431ce",
-            messages=[{"role": "user", "content": "Hello, are you working?"}],
-        )
-        return {"ai_response": completion.choices[0].message.content}
-    except Exception as e:
-        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
