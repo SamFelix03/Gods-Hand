@@ -3,12 +3,15 @@ import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from web3 import Web3
 
 # Load env
 load_dotenv()
 CMC_API_KEY = os.getenv("X_CMC_PRO_API_KEY")
 
 # Config
+RPC_URL = os.getenv("FLOW_RPC_URL")
+CONTRACT_ADDRESS = os.getenv("FLOW_CONTRACT_ADDRESS")
 CMC_URL = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=FLOW&convert=USD'
 
 app = FastAPI()
@@ -41,6 +44,15 @@ def get_flow_price():
         return {"flow_price_usd": price}
     else:
         raise HTTPException(status_code=500, detail="Failed to fetch FLOW price")
+
+@app.get("/blockchain-status")
+def blockchain_status():
+    try:
+        web3 = Web3(Web3.HTTPProvider(RPC_URL))
+        is_connected = web3.is_connected()
+        return {"connected": is_connected, "rpc_url": RPC_URL}
+    except Exception as e:
+        return {"connected": False, "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
