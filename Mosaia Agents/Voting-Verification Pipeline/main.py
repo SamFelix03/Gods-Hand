@@ -5,17 +5,21 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from web3 import Web3
+from openai import OpenAI
 
 # Load env
 load_dotenv()
 CMC_API_KEY = os.getenv("X_CMC_PRO_API_KEY")
+AGENT_API_KEY = os.getenv("verifyagent")
 
 # Config
 RPC_URL = os.getenv("FLOW_RPC_URL")
 CONTRACT_ADDRESS = os.getenv("FLOW_CONTRACT_ADDRESS")
 CMC_URL = 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=FLOW&convert=USD'
 
+# Init
 app = FastAPI()
+client = OpenAI(base_url="https://api.mosaia.ai/v1/agent", api_key=AGENT_API_KEY)
 
 # ABI
 CONTRACT_ABI = [
@@ -42,6 +46,11 @@ CONTRACT_ABI = [
         "type": "function"
     }
 ]
+
+# Request Schema
+class FactCheckInput(BaseModel):
+    statement: str
+    disaster_hash: str
 
 # === Utility: Get USD price of FLOW ===
 def get_usd_price_of_flow():
@@ -128,6 +137,17 @@ def blockchain_status():
 @app.get("/disaster-balance/{disaster_hash}")
 def disaster_balance(disaster_hash: str):
     return get_disaster_balance(disaster_hash)
+
+@app.get("/test-ai")
+def test_ai():
+    try:
+        completion = client.chat.completions.create(
+            model="686656aaf14ab5c885e431ce",
+            messages=[{"role": "user", "content": "Hello, are you working?"}],
+        )
+        return {"ai_response": completion.choices[0].message.content}
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
