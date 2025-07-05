@@ -2,41 +2,20 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {  parseEther } from "viem";
-import { EmbeddedWallet } from "./embedded-wallet"; // Adjust path
-
+import { ethers } from "ethers";
+import { convertUsdToFlow, formatFlowAmount} from "../lib/utils";
+import { CONTRACT_ADDRESS, CONTRACT_ABI, FLOW_TESTNET_CONFIG } from "../lib/constants";
 
 interface DonationModalProps {
   isOpen: boolean;
   onClose: () => void;
   eventTitle: string;
   disasterHash: string;
+  refreshDonations?: () => Promise<void>;
 }
 
 interface EthereumProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-}
-
-interface AztecTestAccount {
-  id: number;
-  name: string;
-  description: string;
-}
-
-interface ChainConfig {
-  id: string;
-  name: string;
-  displayName: string;
-  chainId: string;
-  rpcUrl: string;
-  blockExplorer: string;
-  nativeCurrency: {
-    name: string;
-    symbol: string;
-    decimals: number;
-  };
-  icon: React.ReactNode;
-  description: string;
 }
 
 declare global {
@@ -50,172 +29,60 @@ export default function DonationModal({
   onClose,
   eventTitle,
   disasterHash,
+  refreshDonations,
 }: DonationModalProps) {
-  const [step, setStep] = useState<"wallet" | "chain" | "aztec-accounts" | "amount">(
-    "wallet"
-  );
+  const [step, setStep] = useState<"wallet" | "amount" | "success">("wallet");
   const [donationAmount, setDonationAmount] = useState<string>("");
+  const [flowAmount, setFlowAmount] = useState<number>(0);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("");
-  const [connectedWallet, setConnectedWallet] = useState<string>("");
   const [connectedAccount, setConnectedAccount] = useState<string>("");
-  const [selectedChain, setSelectedChain] = useState<ChainConfig | null>(null);
+  const [isConvertingCurrency, setIsConvertingCurrency] = useState(false);
+  const [txHash, setTxHash] = useState<string>("");
+  const [donatedAmount, setDonatedAmount] = useState<string>("");
+  const [totalDonated, setTotalDonated] = useState<string>("");
 
-  // Aztec specific state
-  const [embeddedWallet, setEmbeddedWallet] = useState<EmbeddedWallet | null>(
-    null
-  );
-  const [selectedTestAccount, setSelectedTestAccount] =
-    useState<AztecTestAccount | null>(null);
-  const [isFauceting, setIsFauceting] = useState(false);
+  // Convert USD to FLOW when donation amount changes
+  useEffect(() => {
+    const convertCurrency = async () => {
+      if (donationAmount && parseFloat(donationAmount) > 0) {
+        setIsConvertingCurrency(true);
+        try {
+          const usdAmount = parseFloat(donationAmount);
+          const flowTokens = await convertUsdToFlow(usdAmount);
+          setFlowAmount(flowTokens);
+        } catch (error) {
+          console.error("Currency conversion failed:", error);
+          // Use fallback rate
+          setFlowAmount(parseFloat(donationAmount) * 1);
+        } finally {
+          setIsConvertingCurrency(false);
+        }
+      } else {
+        setFlowAmount(0);
+      }
+    };
 
-  // Chain configurations for testnets
-  const supportedChains: ChainConfig[] = [
-    {
-      id: "ethereum",
-      name: "Ethereum Sepolia",
-      displayName: "Ethereum",
-      chainId: "0xaa36a7",
-      rpcUrl: "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      blockExplorer: "https://sepolia.etherscan.io",
-      nativeCurrency: {
-        name: "Sepolia Ether",
-        symbol: "ETH",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/ethereum.png" alt="Ethereum" className="w-6 h-6" />,
-      description: "Ethereum Sepolia Testnet"
-    },
-    {
-      id: "arbitrum",
-      name: "Arbitrum Sepolia",
-      displayName: "Arbitrum",
-      chainId: "0x66eee",
-      rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc",
-      blockExplorer: "https://sepolia.arbiscan.io",
-      nativeCurrency: {
-        name: "Arbitrum Sepolia Ether",
-        symbol: "ETH",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/arbitrum.png" alt="Arbitrum" className="w-6 h-6" />,
-      description: "Arbitrum Sepolia Testnet"
-    },
-    {
-      id: "polygon",
-      name: "Polygon Amoy",
-      displayName: "Polygon",
-      chainId: "0x13882",
-      rpcUrl: "https://rpc-amoy.polygon.technology",
-      blockExplorer: "https://amoy.polygonscan.com",
-      nativeCurrency: {
-        name: "MATIC",
-        symbol: "MATIC",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/polygon.png" alt="Polygon" className="w-6 h-6" />,
-      description: "Polygon Amoy Testnet"
-    },
-    {
-      id: "avalanche",
-      name: "Avalanche Fuji",
-      displayName: "Avalanche",
-      chainId: "0xa869",
-      rpcUrl: "https://api.avax-test.network/ext/bc/C/rpc",
-      blockExplorer: "https://testnet.snowtrace.io",
-      nativeCurrency: {
-        name: "Avalanche",
-        symbol: "AVAX",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/avalanche.png" alt="Avalanche" className="w-6 h-6" />,
-      description: "Avalanche Fuji Testnet"
-    },
-    {
-      id: "base",
-      name: "Base Sepolia",
-      displayName: "Base",
-      chainId: "0x14a34",
-      rpcUrl: "https://sepolia.base.org",
-      blockExplorer: "https://sepolia.basescan.org",
-      nativeCurrency: {
-        name: "Sepolia Ether",
-        symbol: "ETH",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/base.png" alt="Base" className="w-6 h-6" />,
-      description: "Base Sepolia Testnet"
-    },
-    {
-      id: "bnb",
-      name: "BNB Smart Chain Testnet",
-      displayName: "BNB Chain",
-      chainId: "0x61",
-      rpcUrl: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      blockExplorer: "https://testnet.bscscan.com",
-      nativeCurrency: {
-        name: "Binance Coin",
-        symbol: "tBNB",
-        decimals: 18,
-      },
-      icon: <img src="/chain-logo/bnb.png" alt="BNB" className="w-6 h-6" />,
-      description: "BNB Smart Chain Testnet"
-    }
-  ];
+    const debounceTimer = setTimeout(convertCurrency, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [donationAmount]);
 
-  // Your test accounts
-  const testAccounts: AztecTestAccount[] = [
-    {
-      id: 1,
-      name: "User Account",
-      description: "Test account for user donations",
-    },
-    {
-      id: 2,
-      name: "NGO Account",
-      description: "Test account for NGOs accepting donations",
-    },
-    {
-      id: 3,
-      name: "User Two Account",
-      description: "Test account two for user donations",
-    },
-  ];
-
-  // Contract configuration
-  const DUMMY_CONTRACT_ADDRESS = "0x1234567890123456789012345678901234567890";
-  const nodeUrl =
-    process.env.REACT_APP_AZTEC_NODE_URL || "http://localhost:8080";
-
-  const initializeEmbeddedWallet = async () => {
-    try {
-      const wallet = new EmbeddedWallet(nodeUrl);
-      await wallet.initialize();
-      setEmbeddedWallet(wallet);
-      return wallet;
-    } catch (error) {
-      console.error("Failed to initialize embedded wallet:", error);
-      throw error;
-    }
-  };
-
-  const switchToChain = async (chain: ChainConfig) => {
+  const switchToFlowTestnet = async () => {
     if (!window.ethereum) {
       setConnectionStatus("MetaMask not found");
       return false;
     }
 
     try {
-      setConnectionStatus(`Switching to ${chain.displayName}...`);
+      setConnectionStatus("Switching to Flow Testnet...");
       
-      // Try to switch to the chain
+      // Try to switch to Flow testnet
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: chain.chainId }],
+        params: [{ chainId: FLOW_TESTNET_CONFIG.chainId }],
       });
 
-      setSelectedChain(chain);
-      setConnectionStatus(`Connected to ${chain.displayName}!`);
+      setConnectionStatus("Connected to Flow Testnet!");
       
       setTimeout(() => {
         setStep("amount");
@@ -232,17 +99,16 @@ export default function DonationModal({
             method: "wallet_addEthereumChain",
             params: [
               {
-                chainId: chain.chainId,
-                chainName: chain.name,
-                nativeCurrency: chain.nativeCurrency,
-                rpcUrls: [chain.rpcUrl],
-                blockExplorerUrls: [chain.blockExplorer],
+                chainId: FLOW_TESTNET_CONFIG.chainId,
+                chainName: FLOW_TESTNET_CONFIG.chainName,
+                nativeCurrency: FLOW_TESTNET_CONFIG.nativeCurrency,
+                rpcUrls: [FLOW_TESTNET_CONFIG.rpcUrl],
+                blockExplorerUrls: [FLOW_TESTNET_CONFIG.blockExplorer],
               },
             ],
           });
 
-          setSelectedChain(chain);
-          setConnectionStatus(`Added and connected to ${chain.displayName}!`);
+          setConnectionStatus("Added and connected to Flow Testnet!");
           
           setTimeout(() => {
             setStep("amount");
@@ -252,128 +118,131 @@ export default function DonationModal({
           
           return true;
         } catch (addError) {
-          console.error("Failed to add chain:", addError);
-          setConnectionStatus(`Failed to add ${chain.displayName} network`);
+          console.error("Failed to add Flow testnet:", addError);
+          setConnectionStatus("Failed to add Flow Testnet network");
           setIsConnecting(false);
           return false;
         }
       } else {
-        console.error("Failed to switch chain:", switchError);
-        setConnectionStatus(`Failed to switch to ${chain.displayName}`);
+        console.error("Failed to switch to Flow testnet:", switchError);
+        setConnectionStatus("Failed to switch to Flow Testnet");
         setIsConnecting(false);
         return false;
       }
     }
   };
 
-  const selectChain = async (chain: ChainConfig) => {
-    setIsConnecting(true);
-    await switchToChain(chain);
-  };
-
-  const selectTestAccount = async (account: AztecTestAccount) => {
-    setIsConnecting(true);
-    setConnectionStatus(`Connecting to ${account.name}...`);
-
-    try {
-      let wallet = embeddedWallet;
-      if (!wallet) {
-        wallet = await initializeEmbeddedWallet();
-      }
-
-      setConnectionStatus("Connecting test account...");
-
-      // Connect to test account (index is 0-based)
-      const connectedAccount = await wallet.connectTestAccount(account.id - 1);
-
-      setSelectedTestAccount(account);
-      setConnectedWallet("aztec");
-      setConnectedAccount(connectedAccount.getAddress().toString());
-      setConnectionStatus(`Connected to ${account.name}!`);
-
-      setTimeout(() => {
-        setStep("amount");
-        setConnectionStatus("");
-        setIsConnecting(false);
-      }, 1500);
-    } catch (error: unknown) {
-      console.error("Test account connection error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Connection failed";
-      setConnectionStatus(`Error: ${errorMessage}`);
-      setIsConnecting(false);
-    }
-  };
-
-  const handleFaucetETH = async () => {
-    if (!selectedTestAccount) return;
-
-    setIsFauceting(true);
-    setConnectionStatus("Requesting ETH from faucet...");
-
-    try {
-      // Simulate faucet request - replace with actual faucet logic if you have one
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setConnectionStatus("Successfully received 1000 ETH!");
-
-      setTimeout(() => {
-        setConnectionStatus("");
-        setIsFauceting(false);
-      }, 2000);
-    } catch (error) {
-      console.error("Faucet error:", error);
-      setConnectionStatus("Faucet request failed");
-      setIsFauceting(false);
-    }
-  };
-
   const handleDonate = async () => {
-    if (!donationAmount || parseFloat(donationAmount) <= 0) return;
+    if (!donationAmount || parseFloat(donationAmount) <= 0 || flowAmount <= 0) return;
 
     setIsConnecting(true);
     setConnectionStatus("Preparing transaction...");
 
-    console.log({
-      connectedWallet,
-      selectedChain,
-      donationAmount,
-    });
-    
     try {
-      if (connectedWallet === "metamask" && selectedChain) {
-        const ethAmount = (parseFloat(donationAmount) * 0.001).toString();
-        const donationAmountWei = parseEther(ethAmount);
-
-        const transactionParameters = {
-          to: DUMMY_CONTRACT_ADDRESS as `0x${string}`,
-          from: connectedAccount as `0x${string}`,
-          value: donationAmountWei,
-          data: "0x",
-        };
-
-        setConnectionStatus(`Please confirm the transaction in MetaMask for ${selectedChain.displayName}...`);
-
-        const txHash = (await window.ethereum!.request({
-          method: "eth_sendTransaction",
-          params: [transactionParameters],
-        })) as string;
-
-        setConnectionStatus(
-          `Transaction sent on ${selectedChain.displayName}! Hash: ${txHash.substring(0, 10)}...`
-        );
-
-        setTimeout(() => {
-          onClose();
-          resetModal();
-        }, 3000);
-      } else {
-        throw new Error("Please connect MetaMask wallet first");
+      if (!window.ethereum) {
+        throw new Error("MetaMask not found");
       }
-    } catch (error: unknown) {
+
+      // Ensure disaster hash has 0x prefix
+      let formattedDisasterHash = disasterHash;
+      if (!disasterHash.startsWith('0x')) {
+        formattedDisasterHash = '0x' + disasterHash;
+      }
+
+      // Create ethers provider and signer
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Verify we're on the correct network
+      const network = await provider.getNetwork();
+
+      if (network.chainId !== 545n) {
+        throw new Error(`Wrong network. Expected Flow Testnet (545), got ${network.chainId}`);
+      }
+
+      // Create contract instance
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      setConnectionStatus("Please confirm the transaction in MetaMask...");
+
+      // Convert FLOW amount to wei using parseEther
+      const donationAmountWei = ethers.parseEther(flowAmount.toString());
+
+      // Verify disaster exists before donating
+      try {
+        const disasterDetails = await contract.getDisasterDetails(formattedDisasterHash);
+
+        if (!disasterDetails[6]) {
+          throw new Error('Disaster is not active');
+        }
+      } catch (verifyError) {
+        throw new Error('Invalid disaster hash or disaster not found');
+      }
+
+      // Call the contract function
+      const tx = await contract.donateToDisaster(formattedDisasterHash, {
+        value: donationAmountWei
+      });
+
+      setConnectionStatus("Transaction submitted! Waiting for confirmation...");
+      setTxHash(tx.hash);
+
+      // Wait for transaction receipt
+      const receipt = await tx.wait();
+
+      setConnectionStatus("Transaction confirmed! Processing events...");
+
+      // Check if DonationMade event was emitted
+      const event = receipt.logs.find((log: any) => {
+        try {
+          const parsed = contract.interface.parseLog(log);
+          return parsed?.name === 'DonationMade';
+        } catch {
+          return false;
+        }
+      });
+
+      if (event) {
+        try {
+          const parsed = contract.interface.parseLog(event);
+          if (parsed && parsed.args) {
+            const donatedAmountFormatted = ethers.formatEther(parsed.args.amount);
+            const totalDonatedFormatted = ethers.formatEther(parsed.args.totalDonated);
+            
+            setDonatedAmount(donatedAmountFormatted);
+            setTotalDonated(totalDonatedFormatted);
+          }
+        } catch (error) {
+          console.error("Error parsing event:", error);
+        }
+      }
+
+      setConnectionStatus("Donation successful!");
+      setStep("success");
+      setIsConnecting(false);
+
+      if (refreshDonations) {
+        await refreshDonations();
+      }
+
+    } catch (error: any) {
       console.error("Donation error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Transaction failed";
+      
+      // More detailed error handling
+      let errorMessage = "Transaction failed";
+      
+      if (error.code === 'CALL_EXCEPTION') {
+        errorMessage = "Transaction failed - please check disaster hash and try again";
+      } else if (error.code === 'INSUFFICIENT_FUNDS') {
+        errorMessage = "Insufficient FLOW balance";
+      } else if (error.code === 'USER_REJECTED') {
+        errorMessage = "Transaction cancelled by user";
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = "Network error - please check your connection to Flow testnet";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setConnectionStatus(`Error: ${errorMessage}`);
       setIsConnecting(false);
     }
@@ -402,15 +271,11 @@ export default function DonationModal({
         return;
       }
 
-      setConnectionStatus("Connected! Please select a blockchain network...");
-      setConnectedWallet("metamask");
       setConnectedAccount(accounts[0]);
+      setConnectionStatus("Connected! Switching to Flow Testnet...");
 
-      setTimeout(() => {
-        setStep("chain");
-        setConnectionStatus("");
-        setIsConnecting(false);
-      }, 1500);
+      // Automatically switch to Flow testnet after connecting
+      await switchToFlowTestnet();
     } catch (error: unknown) {
       console.error("MetaMask connection error:", error);
       const errorMessage =
@@ -420,41 +285,40 @@ export default function DonationModal({
     }
   };
 
-
-
   const handleBack = () => {
-    if (step === "aztec-accounts") {
+    if (step === "amount") {
       setStep("wallet");
-    } else if (step === "chain") {
-      setStep("wallet");
-    } else if (step === "amount") {
-      if (connectedWallet === "metamask") {
-        setStep("chain");
-      } else {
-        setStep("aztec-accounts");
-      }
-    } else {
-      setStep("wallet");
+    } else if (step === "success") {
+      setStep("amount");
     }
     setConnectionStatus("");
     setIsConnecting(false);
     if (step === "wallet") {
-      setConnectedWallet("");
       setConnectedAccount("");
-      setSelectedChain(null);
     }
+  };
+
+  const handleNewDonation = () => {
+    setStep("amount");
+    setDonationAmount("");
+    setFlowAmount(0);
+    setTxHash("");
+    setDonatedAmount("");
+    setTotalDonated("");
+    setConnectionStatus("");
   };
 
   const resetModal = () => {
     setStep("wallet");
     setDonationAmount("");
+    setFlowAmount(0);
     setConnectionStatus("");
     setIsConnecting(false);
-    setConnectedWallet("");
     setConnectedAccount("");
-    setSelectedTestAccount(null);
-    setSelectedChain(null);
-    setIsFauceting(false);
+    setIsConvertingCurrency(false);
+    setTxHash("");
+    setDonatedAmount("");
+    setTotalDonated("");
   };
 
   useEffect(() => {
@@ -520,7 +384,7 @@ export default function DonationModal({
                 </button>
 
                 {/* Back Button */}
-                {(step === "amount" || step === "aztec-accounts" || step === "chain") && (
+                {(step === "amount" || step === "success") && (
                   <button
                     onClick={handleBack}
                     className="absolute top-4 left-4 text-amber-900 hover:text-black transition-colors"
@@ -551,6 +415,9 @@ export default function DonationModal({
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
                         For: {eventTitle}
                       </div>
+                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs">
+                        Flow Testnet Network
+                      </div>
                     </div>
 
                     {connectionStatus && (
@@ -573,111 +440,17 @@ export default function DonationModal({
                             alt="MetaMask"
                             className="w-6 h-6 mr-3"
                           />
-                          {isConnecting && connectedWallet !== "aztec"
-                            ? "Connecting..."
-                            : "Connect MetaMask"}
+                          {isConnecting ? "Connecting..." : "Connect MetaMask"}
                         </button>
                         <p className="text-gray-700 font-['Cinzel'] text-xs text-center italic px-2">
-                          Choose from multiple blockchain networks
+                          Connect to Flow Testnet for donations
                         </p>
                       </div>
-
                     </div>
                   </>
                 )}
 
-                {/* Step 2: Chain Selection */}
-                {step === "chain" && (
-                  <>
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
-                        Select Blockchain Network
-                      </h2>
-                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
-                        Choose your preferred testnet for donation
-                      </div>
-                    </div>
-
-                    {connectionStatus && (
-                      <div className="mb-6 p-3 bg-amber-200/70 rounded-lg border border-amber-600/50">
-                        <p className="text-gray-900 font-['Cinzel'] text-sm text-center font-medium">
-                          {connectionStatus}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-3 max-h-80 overflow-y-auto">
-                      {supportedChains.map((chain) => (
-                        <button
-                          key={chain.id}
-                          onClick={() => selectChain(chain)}
-                          disabled={isConnecting}
-                          className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 text-gray-900 py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel'] text-left"
-                        >
-                          <div className="flex items-center">
-                            <span className="text-2xl mr-4">{chain.icon}</span>
-                            <div className="flex-1">
-                              <div className="font-bold text-lg">
-                                {chain.displayName}
-                              </div>
-                              <div className="text-xs font-normal mt-1 opacity-80">
-                                {chain.description}
-                              </div>
-                              <div className="text-xs font-mono mt-2 text-amber-800">
-                                {chain.nativeCurrency.symbol} • {chain.name}
-                              </div>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Step 3: Aztec Test Account Selection */}
-                {step === "aztec-accounts" && (
-                  <>
-                    <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
-                        Choose Test Account
-                      </h2>
-                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
-                        Select from your Aztec test accounts
-                      </div>
-                    </div>
-
-                    {connectionStatus && (
-                      <div className="mb-6 p-3 bg-amber-200/70 rounded-lg border border-amber-600/50">
-                        <p className="text-gray-900 font-['Cinzel'] text-sm text-center font-medium">
-                          {connectionStatus}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="space-y-4">
-                      {testAccounts.map((account) => (
-                        <button
-                          key={account.id}
-                          onClick={() => selectTestAccount(account)}
-                          disabled={isConnecting}
-                          className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 text-gray-900 py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel'] text-left"
-                        >
-                          <div className="font-bold text-lg">
-                            {account.name}
-                          </div>
-                          <div className="text-xs font-normal mt-1 opacity-80">
-                            {account.description}
-                          </div>
-                          <div className="text-xs font-mono mt-2 text-amber-800">
-                            Test Account {account.id}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {/* Step 4: Amount Input */}
+                {/* Step 2: Amount Input */}
                 {step === "amount" && (
                   <>
                     <div className="text-center mb-8">
@@ -685,14 +458,7 @@ export default function DonationModal({
                         Enter Donation Amount
                       </h2>
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-sm">
-                        Connected:{" "}
-                        <span className="font-bold capitalize">
-                          {connectedWallet}
-                        </span>
-                        {selectedTestAccount &&
-                          ` (${selectedTestAccount.name})`}
-                        {selectedChain &&
-                          ` • ${selectedChain.displayName}`}
+                        Connected: <span className="font-bold">Flow Testnet</span>
                       </div>
                       <div className="mt-1 text-gray-800 font-['Cinzel'] text-xs italic">
                         For: {eventTitle}
@@ -707,22 +473,9 @@ export default function DonationModal({
                       </div>
                     )}
 
-                    {/* Faucet Button (only for Aztec) */}
-                    {connectedWallet === "aztec" && (
-                      <div className="mb-4 text-center">
-                        <button
-                          onClick={handleFaucetETH}
-                          disabled={isFauceting}
-                          className="text-amber-800 hover:text-amber-900 font-['Cinzel'] text-sm underline disabled:text-gray-500"
-                        >
-                          {isFauceting ? "Processing..." : "🚰 Faucet ETH"}
-                        </button>
-                      </div>
-                    )}
-
                     <div className="mb-6">
                       <label className="block text-gray-900 font-['Cinzel'] font-bold mb-3 text-lg">
-                        Amount ({selectedChain?.nativeCurrency.symbol || "ETH"})
+                        Amount (USD)
                       </label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-700 font-['Cinzel'] text-xl font-bold">
@@ -738,6 +491,24 @@ export default function DonationModal({
                           className="w-full pl-8 pr-4 py-4 bg-white/20 backdrop-blur-sm border-2 border-amber-600/50 rounded-xl text-gray-900 font-['Cinzel'] text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-amber-700 focus:bg-white/30 transition-all"
                         />
                       </div>
+                      
+                      {/* Flow Amount Display */}
+                      {donationAmount && parseFloat(donationAmount) > 0 && (
+                        <div className="mt-3 p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                          <div className="text-center">
+                            <p className="text-gray-800 font-['Cinzel'] text-sm">
+                              Equivalent in FLOW:
+                            </p>
+                            <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
+                              {isConvertingCurrency ? (
+                                <span className="animate-pulse">Converting...</span>
+                              ) : (
+                                formatFlowAmount(flowAmount)
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -745,12 +516,106 @@ export default function DonationModal({
                       disabled={
                         !donationAmount ||
                         parseFloat(donationAmount) <= 0 ||
-                        isConnecting
+                        flowAmount <= 0 ||
+                        isConnecting ||
+                        isConvertingCurrency
                       }
                       className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 disabled:border-gray-400/30 disabled:text-gray-500 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel']"
                     >
-                      {isConnecting ? "Processing..." : "Donate Now"}
+                      {isConnecting ? "Processing..." : 
+                       isConvertingCurrency ? "Converting..." : 
+                       "Donate Now"}
                     </button>
+                  </>
+                )}
+
+                {/* Step 3: Success Screen */}
+                {step === "success" && (
+                  <>
+                    <div className="text-center mb-8">
+                      <div className="mb-4">
+                        <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                          <svg
+                            className="w-8 h-8 text-green-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
+                        Donation Successful!
+                      </h2>
+                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
+                        Thank you for your generosity
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                      {/* Transaction Hash */}
+                      <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                        <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
+                          Transaction Hash:
+                        </p>
+                        <p className="text-gray-900 font-['Cinzel'] text-xs font-mono break-all">
+                          {txHash}
+                        </p>
+                        <a
+                          href={`https://evm-testnet.flowscan.io/tx/${txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-800 hover:text-amber-900 font-['Cinzel'] text-xs underline mt-1 inline-block"
+                        >
+                          View on Explorer →
+                        </a>
+                      </div>
+
+                      {/* Donation Details */}
+                      {donatedAmount && (
+                        <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
+                            Your Donation:
+                          </p>
+                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
+                            {parseFloat(donatedAmount).toFixed(6)} FLOW
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Total Donated */}
+                      {totalDonated && (
+                        <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
+                            Total Raised:
+                          </p>
+                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
+                            {parseFloat(totalDonated).toFixed(6)} FLOW
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleNewDonation}
+                        className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-gray-900 font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-['Cinzel']"
+                      >
+                        Donate Again
+                      </button>
+                      <button
+                        onClick={onClose}
+                        className="w-full bg-amber-700/20 backdrop-blur-xl border border-amber-600/50 hover:bg-amber-700/30 text-gray-900 font-bold py-3 px-6 rounded-xl transition-all duration-300 font-['Cinzel']"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </>
                 )}
 
