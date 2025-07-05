@@ -2,8 +2,12 @@ import os
 import requests
 import traceback
 import re
+import asyncio
+import threading
+import time
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from web3 import Web3
 from openai import OpenAI
@@ -363,7 +367,7 @@ def test_parser():
 # Add UNLOCK_AMOUNT_USD if not present
 UNLOCK_AMOUNT_USD = Decimal('0.4')  # $0.4 worth of FLOW
 
-# Voting ABI (add if not present)
+# Contract ABIs
 VOTING_ABI = [
     {
         "inputs": [
@@ -378,19 +382,35 @@ VOTING_ABI = [
     }
 ]
 
-# Voting DynamoDB Table
-voting_dynamodb = boto3.resource(
+LOTTERY_ABI = [
+    {
+        "inputs": [
+            { "internalType": "bytes32", "name": "_disasterHash", "type": "bytes32" }
+        ],
+        "name": "lottery",
+        "outputs": [
+            { "internalType": "address", "name": "", "type": "address" }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+
+# DynamoDB Tables
+dynamodb = boto3.resource(
     "dynamodb",
     region_name=os.getenv("AWS_REGION"),
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
 )
-voting_table = voting_dynamodb.Table("gods-hand-claims")
+voting_table = dynamodb.Table("gods-hand-claims")
+events_table = dynamodb.Table("gods-hand-events")
 
-# Voting Web3 Setup
-voting_w3 = Web3(Web3.HTTPProvider(os.getenv("FLOW_RPC_URL")))
-voting_account = voting_w3.eth.account.from_key(os.getenv("FLOW_PRIVATE_KEY"))
-voting_contract = voting_w3.eth.contract(address=Web3.to_checksum_address(os.getenv("FLOW_CONTRACT_ADDRESS")), abi=VOTING_ABI)
+# Web3 Setup
+w3 = Web3(Web3.HTTPProvider(os.getenv("FLOW_RPC_URL")))
+account = w3.eth.account.from_key(os.getenv("FLOW_PRIVATE_KEY"))
+contract = w3.eth.contract(address=Web3.to_checksum_address(os.getenv("FLOW_CONTRACT_ADDRESS")), abi=VOTING_ABI)
+lottery_contract = w3.eth.contract(address=Web3.to_checksum_address(os.getenv("FLOW_CONTRACT_ADDRESS")), abi=LOTTERY_ABI)
 
 # Voting Input model
 class VoteInput(BaseModel):
@@ -489,17 +509,17 @@ async def process_vote(vote: VoteInput):
 
             disaster_hash_bytes32 = Web3.to_bytes(hexstr=vote.disasterHash)
             recipient = Web3.to_checksum_address(org_address)
-            nonce = voting_w3.eth.get_transaction_count(voting_account.address)
-            tx = voting_contract.functions.unlockFunds(disaster_hash_bytes32, unlock_amount_wei, recipient).build_transaction({
-                'from': voting_account.address,
+            nonce = w3.eth.get_transaction_count(account.address)
+            tx = contract.functions.unlockFunds(disaster_hash_bytes32, unlock_amount_wei, recipient).build_transaction({
+                'from': account.address,
                 'chainId': int(os.getenv("FLOW_CHAIN_ID", "545")),
                 'nonce': nonce,
                 'gas': 300000,
-                'gasPrice': voting_w3.to_wei('1', 'gwei')
+                'gasPrice': w3.to_wei('1', 'gwei')
             })
-            signed_tx = voting_w3.eth.account.sign_transaction(tx, os.getenv("FLOW_PRIVATE_KEY"))
-            tx_hash = voting_w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-            receipt = voting_w3.eth.wait_for_transaction_receipt(tx_hash)
+            signed_tx = w3.eth.account.sign_transaction(tx, os.getenv("FLOW_PRIVATE_KEY"))
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
             
             # Add the tx hash to the claims_hash attribute in the table
             voting_table.update_item(
@@ -571,6 +591,347 @@ async def process_vote(vote: VoteInput):
     else:
         raise HTTPException(status_code=400, detail="Invalid vote result. Must be: approve, reject, higher, or lower.")
 
+# === Raffle Monitoring System ===
+
+# Global variable to track processed disasters
+processed_disasters = set()
+
+def trigger_lottery(disaster_hash: str):
+    """Trigger lottery for a specific disaster"""
+    try:
+        print(f"[LOTTERY] Triggering lottery for disaster: {disaster_hash}")
+        
+        # Get disaster information from DynamoDB first
+        try:
+            response = events_table.get_item(Key={"disaster_hash": disaster_hash})
+            disaster = response.get('Item')
+            if not disaster:
+                print(f"[LOTTERY] ❌ Disaster not found in database: {disaster_hash}")
+                return False
+        except Exception as e:
+            print(f"[LOTTERY] ❌ Failed to fetch disaster from database: {e}")
+            return False
+        
+        # Convert disaster hash to bytes32
+        if disaster_hash.startswith("0x"):
+            disaster_hash = disaster_hash[2:]
+        disaster_bytes = bytes.fromhex(disaster_hash)
+        
+        # Build transaction
+        nonce = w3.eth.get_transaction_count(account.address)
+        tx = lottery_contract.functions.lottery(disaster_bytes).build_transaction({
+            'from': account.address,
+            'chainId': int(os.getenv("FLOW_CHAIN_ID", "545")),
+            'nonce': nonce,
+            'gas': 500000,  # Higher gas limit for lottery function
+            'gasPrice': w3.to_wei('1', 'gwei')
+        })
+        
+        # Sign and send transaction
+        signed_tx = w3.eth.account.sign_transaction(tx, os.getenv("FLOW_PRIVATE_KEY"))
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+        
+        print(f"[LOTTERY] ✅ Lottery triggered successfully!")
+        print(f"[LOTTERY] Transaction Hash: {tx_hash.hex()}")
+        print(f"[LOTTERY] Block Number: {receipt.blockNumber}")
+        print(f"[LOTTERY] Disaster Title: {disaster.get('title', 'Unknown')}")
+        
+        # Update DynamoDB with comprehensive lottery information
+        try:
+            current_time = datetime.utcnow().isoformat() + 'Z'
+            
+            # Calculate lottery end time based on duration (default 24 hours if not specified)
+            lottery_duration = disaster.get('lottery_duration_hours', 24)
+            lottery_end_time = (datetime.utcnow() + timedelta(hours=lottery_duration)).isoformat() + 'Z'
+            
+            events_table.update_item(
+                Key={"disaster_hash": disaster_hash},
+                UpdateExpression="SET lottery_status = :ls, lottery_transaction_hash = :tx, lottery_end_time = :let, lottery_prize_amount = :lpa",
+                ExpressionAttributeValues={
+                    ":ls": "triggered",
+                    ":tx": tx_hash.hex(),
+                    ":let": lottery_end_time,
+                    ":lpa": "5% of disaster funds"  # 5% as per contract
+                }
+            )
+            print(f"[LOTTERY] ✅ Updated DynamoDB with comprehensive lottery status")
+            print(f"[LOTTERY] Lottery end time: {lottery_end_time}")
+            print(f"[LOTTERY] Duration: {lottery_duration} hours")
+        except Exception as e:
+            print(f"[LOTTERY] ⚠️ Failed to update DynamoDB: {e}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"[LOTTERY] ❌ Failed to trigger lottery: {e}")
+        traceback.print_exc()
+        return False
+
+def check_disasters_for_raffle():
+    """Check for disasters that are ready for raffle (72 hours old)"""
+    try:
+        print("[RAFFLE] Checking for disasters ready for raffle...")
+        
+        # Scan the events table for disasters
+        response = events_table.scan()
+        disasters = response.get('Items', [])
+        
+        current_time = datetime.utcnow()
+        seventy_two_hours_ago = current_time - timedelta(hours=72)
+        
+        for disaster in disasters:
+            disaster_hash = disaster.get('disaster_hash')
+            created_at = disaster.get('created_at')
+            lottery_status = disaster.get('lottery_status', 'pending')
+            lottery_end_time = disaster.get('lottery_end_time')
+            
+            # Skip if already processed or lottery already triggered
+            if disaster_hash in processed_disasters or lottery_status in ['triggered', 'completed']:
+                continue
+            
+            # Check if disaster is older than 72 hours
+            if created_at:
+                try:
+                    # Parse the created_at timestamp
+                    if isinstance(created_at, str):
+                        disaster_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    else:
+                        disaster_time = created_at
+                    
+                    if disaster_time < seventy_two_hours_ago:
+                        print(f"[RAFFLE] 🎰 Disaster {disaster_hash} is ready for raffle!")
+                        print(f"[RAFFLE] Title: {disaster.get('title', 'Unknown')}")
+                        print(f"[RAFFLE] Created: {disaster_time}")
+                        print(f"[RAFFLE] Current: {current_time}")
+                        print(f"[RAFFLE] Age: {(current_time - disaster_time).total_seconds() / 3600:.1f} hours")
+                        
+                        # Trigger lottery
+                        success = trigger_lottery(disaster_hash)
+                        if success:
+                            processed_disasters.add(disaster_hash)
+                        
+                except Exception as e:
+                    print(f"[RAFFLE] ⚠️ Error processing disaster {disaster_hash}: {e}")
+                    continue
+        
+        print(f"[RAFFLE] Check completed. Processed disasters: {len(processed_disasters)}")
+        
+    except Exception as e:
+        print(f"[RAFFLE] ❌ Error checking disasters: {e}")
+        traceback.print_exc()
+
+def check_lottery_winners():
+    """Check for completed lotteries and update winner information"""
+    try:
+        print("[LOTTERY] Checking for completed lotteries...")
+        
+        # Scan for lotteries that have ended
+        response = events_table.scan(
+            FilterExpression="lottery_status = :status",
+            ExpressionAttributeValues={":status": "triggered"}
+        )
+        triggered_lotteries = response.get('Items', [])
+        
+        current_time = datetime.utcnow()
+        
+        for lottery in triggered_lotteries:
+            lottery_end_time = lottery.get('lottery_end_time')
+            if not lottery_end_time:
+                continue
+                
+            try:
+                # Parse lottery end time
+                if isinstance(lottery_end_time, str):
+                    end_time = datetime.fromisoformat(lottery_end_time.replace('Z', '+00:00'))
+                else:
+                    end_time = lottery_end_time
+                
+                # Check if lottery has ended
+                if current_time > end_time:
+                    disaster_hash = lottery.get('disaster_hash')
+                    print(f"[LOTTERY] 🏆 Lottery ended for disaster: {disaster_hash}")
+                    
+                    # Update status to completed
+                    events_table.update_item(
+                        Key={"disaster_hash": disaster_hash},
+                        UpdateExpression="SET lottery_status = :ls",
+                        ExpressionAttributeValues={":ls": "completed"}
+                    )
+                    print(f"[LOTTERY] ✅ Updated lottery status to completed")
+                    
+            except Exception as e:
+                print(f"[LOTTERY] ⚠️ Error processing lottery end time: {e}")
+                continue
+                
+    except Exception as e:
+        print(f"[LOTTERY] ❌ Error checking lottery winners: {e}")
+        traceback.print_exc()
+
+def raffle_monitor_loop():
+    """Background loop to monitor disasters for raffle"""
+    print("[RAFFLE] 🎰 Starting raffle monitoring system...")
+    
+    while True:
+        try:
+            check_disasters_for_raffle()
+            check_lottery_winners()  # Also check for completed lotteries
+            # Wait for 1 hour before next check
+            time.sleep(3600)  # 1 hour
+        except Exception as e:
+            print(f"[RAFFLE] ❌ Error in raffle monitor loop: {e}")
+            time.sleep(300)  # Wait 5 minutes on error before retrying
+
+def start_raffle_monitor():
+    """Start the raffle monitoring in a separate thread"""
+    raffle_thread = threading.Thread(target=raffle_monitor_loop, daemon=True)
+    raffle_thread.start()
+    print("[RAFFLE] 🎰 Raffle monitoring thread started")
+
+# === Endpoint to manually trigger lottery ===
+@app.post("/trigger-lottery/{disaster_hash}")
+def manual_trigger_lottery(disaster_hash: str):
+    """Manually trigger lottery for a specific disaster"""
+    try:
+        success = trigger_lottery(disaster_hash)
+        if success:
+            return {"status": "✅ Lottery triggered successfully", "disaster_hash": disaster_hash}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to trigger lottery")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# === Endpoint to check raffle status ===
+@app.get("/raffle-status")
+def get_raffle_status():
+    """Get status of raffle monitoring system"""
+    try:
+        # Get count of disasters in events table
+        response = events_table.scan(Select='COUNT')
+        total_disasters = response.get('Count', 0)
+        
+        # Get lottery statistics
+        pending_response = events_table.scan(
+            FilterExpression="lottery_status = :status",
+            ExpressionAttributeValues={":status": "pending"}
+        )
+        pending_lotteries = len(pending_response.get('Items', []))
+        
+        triggered_response = events_table.scan(
+            FilterExpression="lottery_status = :status",
+            ExpressionAttributeValues={":status": "triggered"}
+        )
+        triggered_lotteries = len(triggered_response.get('Items', []))
+        
+        completed_response = events_table.scan(
+            FilterExpression="lottery_status = :status",
+            ExpressionAttributeValues={":status": "completed"}
+        )
+        completed_lotteries = len(completed_response.get('Items', []))
+        
+        return {
+            "status": "active",
+            "processed_disasters": len(processed_disasters),
+            "total_disasters": total_disasters,
+            "lottery_stats": {
+                "pending": pending_lotteries,
+                "triggered": triggered_lotteries,
+                "completed": completed_lotteries
+            },
+            "monitor_active": True,
+            "next_check_in": "1 hour"
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+# === Endpoint to get lottery details for a specific disaster ===
+@app.get("/lottery/{disaster_hash}")
+def get_lottery_details(disaster_hash: str):
+    """Get detailed lottery information for a specific disaster"""
+    try:
+        response = events_table.get_item(Key={"disaster_hash": disaster_hash})
+        disaster = response.get('Item')
+        
+        if not disaster:
+            raise HTTPException(status_code=404, detail="Disaster not found")
+        
+        # Calculate time until lottery (if pending)
+        lottery_info = {
+            "disaster_hash": disaster_hash,
+            "title": disaster.get('title', 'Unknown'),
+            "lottery_status": disaster.get('lottery_status', 'pending'),
+            "lottery_duration_hours": disaster.get('lottery_duration_hours', 24),
+            "lottery_prize_amount": disaster.get('lottery_prize_amount', '5% of disaster funds'),
+            "created_at": disaster.get('created_at'),
+            "lottery_end_time": disaster.get('lottery_end_time'),
+            "lottery_transaction_hash": disaster.get('lottery_transaction_hash'),
+            "lottery_winner": disaster.get('lottery_winner')
+        }
+        
+        # Calculate time until lottery trigger (if pending)
+        if disaster.get('lottery_status') == 'pending' and disaster.get('created_at'):
+            try:
+                created_at = datetime.fromisoformat(disaster.get('created_at').replace('Z', '+00:00'))
+                trigger_time = created_at + timedelta(hours=72)
+                current_time = datetime.utcnow()
+                
+                if current_time < trigger_time:
+                    time_until_trigger = trigger_time - current_time
+                    lottery_info["time_until_trigger"] = {
+                        "hours": int(time_until_trigger.total_seconds() // 3600),
+                        "minutes": int((time_until_trigger.total_seconds() % 3600) // 60)
+                    }
+                else:
+                    lottery_info["time_until_trigger"] = "Ready for trigger"
+            except Exception as e:
+                lottery_info["time_until_trigger"] = "Error calculating time"
+        
+        return lottery_info
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+# === Endpoint to get all lotteries ===
+@app.get("/lotteries")
+def get_all_lotteries():
+    """Get all lotteries with their status"""
+    try:
+        response = events_table.scan()
+        disasters = response.get('Items', [])
+        
+        lotteries = []
+        for disaster in disasters:
+            lottery_info = {
+                "disaster_hash": disaster.get('disaster_hash'),
+                "title": disaster.get('title', 'Unknown'),
+                "lottery_status": disaster.get('lottery_status', 'pending'),
+                "created_at": disaster.get('created_at'),
+                "lottery_end_time": disaster.get('lottery_end_time'),
+                "lottery_transaction_hash": disaster.get('lottery_transaction_hash')
+            }
+            lotteries.append(lottery_info)
+        
+        # Sort by created_at (newest first)
+        lotteries.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        return {
+            "total": len(lotteries),
+            "lotteries": lotteries
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
+    
+    # Start raffle monitoring
+    start_raffle_monitor()
+    
+    # Start FastAPI server
     uvicorn.run(app, host="0.0.0.0", port=8000)
