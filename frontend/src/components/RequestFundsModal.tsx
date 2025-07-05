@@ -10,20 +10,16 @@ interface RequestFundsModalProps {
   onClose: () => void;
   eventTitle: string;
   eventId: string;
+  disasterHash: string;
 }
 
 interface ApiResponse {
-  petition: string;
-  isTrue: boolean;
   amount: number;
-  summary: string;
-  reasoning: string;
-  sources: Array<{
-    title: string;
-    url: string;
-    snippet: string;
-  }>;
-  responseTimeMs: number;
+  comment: string;
+  sources: string[];
+  flow_balance: number;
+  usd_value: number;
+  raw_agent_response: string;
 }
 
 export default function RequestFundsModal({
@@ -31,6 +27,7 @@ export default function RequestFundsModal({
   onClose,
   eventTitle,
   eventId,
+  disasterHash,
 }: RequestFundsModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [organizationName, setOrganizationName] = useState<string>("");
@@ -129,6 +126,7 @@ export default function RequestFundsModal({
 
     try {
       // Insert claim into database with organization details
+      
       const claimData = await claimsService.createClaim({
         event_id: eventId,
         organization_name: organizationName.trim(),
@@ -136,6 +134,7 @@ export default function RequestFundsModal({
         organization_aztec_address: walletAddress,
         reason: reason.trim(),
         claim_state: "voting",
+        claims_hash: "",
       });
 
       setSubmitStatus(
@@ -143,26 +142,32 @@ export default function RequestFundsModal({
       );
       setIsProcessing(true);
 
-      const apiUrl =
-        "https://938acb9507759287bfcfb317b56ab1b38f1d599b-3000.dstack-prod8.phala.network";
+      const apiUrl = "/api";
 
-      const apiResponse = await fetch(`${apiUrl}/api/fact-check`, {
+      console.log(JSON.stringify({
+        statement: reason,
+        disaster_hash: disasterHash
+      }));
+
+      const apiResponse = await fetch(`${apiUrl}/fact-check`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
         },
+        mode: "cors",
         body: JSON.stringify({
           statement: reason,
+          disaster_hash: disasterHash
         }),
       });
-
       const data = await apiResponse.json();
       console.log(data);
 
       // Update claim with AI analysis results
       const updatedClaimData: Partial<Omit<Claim, "id" | "created_at">> = {
         claimed_amount: data.amount,
-        claim_state: data.isTrue ? "voting" : "rejected"
+        claim_state: data.amount > 0 ? "voting" : "rejected"
       };
 
       await claimsService.updateClaim(claimData.id, updatedClaimData);
@@ -171,7 +176,7 @@ export default function RequestFundsModal({
       setIsProcessing(false);
       setIsSuccess(true);
       
-      if (data.isTrue) {
+      if (data.amount > 0) {
         setSubmitStatus("Analysis complete! Your claim has been approved for community voting.");
       } else {
         setSubmitStatus("Analysis complete! Unfortunately, your claim was not verified and has been rejected.");
@@ -447,14 +452,8 @@ export default function RequestFundsModal({
           AI Analysis Results
         </h3>
         <div className="flex justify-center items-center gap-3">
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-bold font-['Cinzel'] ${
-              apiResponse?.isTrue
-                ? "bg-green-200 text-green-800"
-                : "bg-red-200 text-red-800"
-            }`}
-          >
-            {apiResponse?.isTrue ? "✓ Verified & Approved" : "✗ Unverified & Rejected"}
+          <span className="px-3 py-1 rounded-full text-sm font-bold font-['Cinzel'] bg-green-200 text-green-800">
+            ✓ Analysis Complete
           </span>
           <span className="text-2xl font-bold text-amber-600 font-['Cinzel']">
             ${apiResponse?.amount?.toLocaleString()}
@@ -462,60 +461,25 @@ export default function RequestFundsModal({
         </div>
       </div>
 
-      <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4 border border-amber-600/30">
-        <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-2">
-          Petition Summary
+      <div className="bg-white/30 backdrop-blur-sm rounded-xl p-6 border border-amber-600/30">
+        <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-3 text-lg">
+          Allocated Amount
         </h4>
-        <p className="text-gray-800 font-['Cinzel'] text-sm leading-relaxed">
-          {apiResponse?.petition}
+        <p className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-4">
+          ${apiResponse?.amount?.toLocaleString()} USD
+        </p>
+        <p className="text-lg text-gray-700 font-['Cinzel']">
+          (≈ {apiResponse?.flow_balance?.toFixed(2)} FLOW)
         </p>
       </div>
 
-      <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4 border border-amber-600/30">
-        <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-2">
-          Analysis Summary
+      <div className="bg-white/30 backdrop-blur-sm rounded-xl p-6 border border-amber-600/30">
+        <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-3 text-lg">
+          AI Assessment
         </h4>
-        <p className="text-gray-800 font-['Cinzel'] text-sm leading-relaxed">
-          {apiResponse?.summary}
+        <p className="text-gray-800 font-['Cinzel'] text-base leading-relaxed">
+          {apiResponse?.comment}
         </p>
-      </div>
-
-      <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4 border border-amber-600/30">
-        <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-2">
-          {apiResponse?.isTrue ? "Approval Reasoning" : "Rejection Reasoning"}
-        </h4>
-        <p className="text-gray-800 font-['Cinzel'] text-sm leading-relaxed">
-          {apiResponse?.reasoning}
-        </p>
-      </div>
-
-      {apiResponse?.sources && apiResponse.sources.length > 0 && (
-        <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4 border border-amber-600/30">
-          <h4 className="font-bold text-gray-900 font-['Cinzel'] mb-3">
-            Sources
-          </h4>
-          <div className="space-y-2">
-            {apiResponse.sources.map((source, index) => (
-              <div key={index} className="bg-white/20 rounded-lg p-3">
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-amber-700 hover:text-amber-800 font-['Cinzel'] text-sm block mb-1 hover:underline"
-                >
-                  {source.title}
-                </a>
-                <p className="text-gray-700 font-['Cinzel'] text-xs leading-relaxed">
-                  {source.snippet}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="text-center text-gray-600 font-['Cinzel'] text-xs">
-        Analysis completed in {apiResponse?.responseTimeMs}ms
       </div>
 
       <button
