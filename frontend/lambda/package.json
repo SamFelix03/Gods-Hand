@@ -1,0 +1,27 @@
+{
+  "name": "lottery-scheduler-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function to schedule and execute lottery timers for disaster relief events",
+  "main": "lotteryScheduler.js",
+  "scripts": {
+    "test": "node -e \"const { testLottery } = require('./lotteryScheduler'); testLottery(process.argv[1]).catch(console.error);\"",
+    "deploy": "zip -r lottery-scheduler.zip . && aws lambda update-function-code --function-name lottery-scheduler --zip-file fileb://lottery-scheduler.zip",
+    "create-function": "aws lambda create-function --function-name lottery-scheduler --runtime nodejs18.x --role arn:aws:iam::ACCOUNT:role/lambda-execution-role --handler lotteryScheduler.handler --zip-file fileb://lottery-scheduler.zip --timeout 60 --memory-size 256"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "ethers": "^6.8.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "lottery",
+    "blockchain",
+    "disaster-relief",
+    "timer",
+    "scheduler"
+  ],
+  "author": "Gods Hand Team",
+  "license": "MIT"
+} 
