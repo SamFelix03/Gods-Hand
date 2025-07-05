@@ -117,6 +117,10 @@ const createClaimsTable = async () => {
         AttributeName: "created_at",
         AttributeType: "S",
       },
+      {
+        AttributeName: "claims_hash",
+        AttributeType: "S",
+      },
     ],
     GlobalSecondaryIndexes: [
       {
@@ -129,6 +133,22 @@ const createClaimsTable = async () => {
           {
             AttributeName: "created_at",
             KeyType: "RANGE",
+          },
+        ],
+        Projection: {
+          ProjectionType: "ALL",
+        },
+        ProvisionedThroughput: {
+          ReadCapacityUnits: 5,
+          WriteCapacityUnits: 5,
+        },
+      },
+      {
+        IndexName: "claims_hash-index",
+        KeySchema: [
+          {
+            AttributeName: "claims_hash",
+            KeyType: "HASH",
           },
         ],
         Projection: {
@@ -160,10 +180,76 @@ const createClaimsTable = async () => {
   }
 };
 
+const createVotesTable = async () => {
+  const params = {
+    TableName: "gods-hand-votes",
+    KeySchema: [
+      {
+        AttributeName: "id",
+        KeyType: "HASH",
+      },
+    ],
+    AttributeDefinitions: [
+      {
+        AttributeName: "id",
+        AttributeType: "S",
+      },
+      {
+        AttributeName: "claim_id",
+        AttributeType: "S",
+      },
+      {
+        AttributeName: "created_at",
+        AttributeType: "S",
+      },
+    ],
+    GlobalSecondaryIndexes: [
+      {
+        IndexName: "claim-id-index",
+        KeySchema: [
+          {
+            AttributeName: "claim_id",
+            KeyType: "HASH",
+          },
+          {
+            AttributeName: "created_at",
+            KeyType: "RANGE",
+          },
+        ],
+        Projection: {
+          ProjectionType: "ALL",
+        },
+        ProvisionedThroughput: {
+          ReadCapacityUnits: 5,
+          WriteCapacityUnits: 5,
+        },
+      },
+    ],
+    BillingMode: "PROVISIONED",
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 5,
+      WriteCapacityUnits: 5,
+    },
+  };
+
+  try {
+    const command = new CreateTableCommand(params);
+    const result = await dynamoClient.send(command);
+    console.log("Votes table created successfully:", result.TableDescription.TableName);
+  } catch (error) {
+    if (error.name === "ResourceInUseException") {
+      console.log("Votes table already exists");
+    } else {
+      console.error("Error creating votes table:", error);
+    }
+  }
+};
+
 const setupTables = async () => {
   console.log("Setting up DynamoDB tables...");
   await createEventsTable();
   await createClaimsTable();
+  await createVotesTable();
   console.log("DynamoDB setup complete!");
 };
 
