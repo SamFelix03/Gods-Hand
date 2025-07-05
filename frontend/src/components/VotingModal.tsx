@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { zkPassportService } from "../lib/zkpassport";
+import { votesService } from "../lib/dynamodb/votes";
+import { claimsService } from "../lib/dynamodb/claims";
 import qrcode from "qrcode";
 import { keccak256 } from "@aztec/foundation/crypto";
 
@@ -145,39 +147,108 @@ export default function VotingModal({
   };
 
   const handleVoteSubmit = async () => {
-    if (!selectedVote) return;
+    if (!selectedVote || !uniqueIdentifier) return;
     
     setIsSubmitting(true);
     setSubmitStatus("Submitting your vote...");
     
     try {
-      const apiUrl = "https://938acb9507759287bfcfb317b56ab1b38f1d599b-3000.dstack-prod8.phala.network";
+      const voterHash = keccak256(Buffer.from(uniqueIdentifier)).toString('hex');
       
-      const response = await fetch(`${apiUrl}/api/vote`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          voteType: selectedVote,
-        }),
-      });
+      // Store the vote
+      const voteData = {
+        claim_id: claimId,
+        disaster_hash: disasterHash,
+        organization_address: organizationAztecAddress,
+        vote_type: selectedVote,
+        voter_identifier: voterHash,
+        timestamp: new Date().toISOString()
+      };
 
-      if (!response.ok) {
-        throw new Error(`Vote submission failed: ${response.statusText}`);
+      await votesService.createVote(voteData);
+      setSubmitStatus("Vote submitted! Checking if consensus reached...");
+
+      // Check consensus
+      const consensusData = await votesService.checkConsensus(claimId);
+      console.log('Consensus data:', consensusData);
+
+      if (consensusData.hasConsensus && consensusData.majorityVote) {
+        setSubmitStatus("Consensus reached! Processing final decision...");
+        
+        // Send majority vote to the voting agent
+        const votingApiUrl = "/api"; // Use Vite proxy instead of direct ngrok URL
+        
+        // Map our vote types to agent expected values
+        const voteMapping = {
+          'accept': 'approve',
+          'reject': 'reject', 
+          'raise_amount': 'raise',
+          'lower_amount': 'lower'
+        };
+
+        const agentVoteType = voteMapping[consensusData.majorityVote as keyof typeof voteMapping] || consensusData.majorityVote;
+
+        let agentData: { txHash?: string; status?: string } | null = null;
+        try {
+          const agentResponse = await fetch(`${votingApiUrl}/process-vote/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            mode: "cors",
+            body: JSON.stringify({
+              voteResult: agentVoteType,
+              uuid: claimId,
+              disasterHash: disasterHash
+            }),
+          });
+
+          if (agentResponse.ok) {
+            agentData = await agentResponse.json();
+            console.log("Agent response:", agentData);
+          }
+        } catch (agentError) {
+          console.warn("Agent call failed, updating status locally:", agentError);
+        }
+
+        // Update claim status based on majority vote and agent response
+        if (consensusData.majorityVote === 'accept') {
+          if (agentData?.txHash) {
+            setSubmitStatus(`✅ Claim approved! Funds have been unlocked. Transaction: ${agentData.txHash}`);
+          } else {
+            setSubmitStatus(`✅ Claim approved by community vote!`);
+          }
+          setCurrentStep("success");
+        } else if (consensusData.majorityVote === 'reject') {
+          setSubmitStatus(`❌ Claim rejected by community vote.`);
+          setCurrentStep("success");
+        } else if (consensusData.majorityVote === 'raise_amount' || consensusData.majorityVote === 'lower_amount') {
+          setSubmitStatus(`📝 Community voted to ${consensusData.majorityVote === 'raise_amount' ? 'increase' : 'decrease'} the amount. The organization will need to resubmit with a new amount, and voting will restart.`);
+          
+          // Clear votes locally since voting needs to reset for new amount
+          try {
+            await votesService.clearVotesForClaim(claimId);
+            console.log(`Cleared votes for claim ${claimId} due to ${consensusData.majorityVote} verdict`);
+          } catch (clearError) {
+            console.warn('Failed to clear votes locally:', clearError);
+          }
+          
+          setCurrentStep("success");
+        }
+
+        // Note: Claim status is updated by the agent automatically
+        // For raise/lower amount, the agent should reset voting and update the claim amount
+        onVoteComplete(selectedVote);
+        
+        setTimeout(() => {
+          onClose();
+          resetModal();
+        }, 3000);
+      } else {
+        setSubmitStatus(`✅ Vote submitted! (${consensusData.voteCount}/3 votes received)`);
+        setCurrentStep("success");
       }
-
-      const data = await response.json();
-      console.log("Vote response:", data);
-
-      setSubmitStatus("✅ Vote submitted successfully!");
-      setCurrentStep("success");
-      onVoteComplete(selectedVote);
-      
-      setTimeout(() => {
-        onClose();
-        resetModal();
-      }, 2000);
     } catch (error) {
       console.error("Vote submission error:", error);
       setSubmitStatus(
