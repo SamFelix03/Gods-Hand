@@ -48,7 +48,7 @@ Traditional disaster relief platforms fail due to:
 - **No rewards** beyond moral satisfaction
 - **No engagement mechanisms** for repeat donations
 
-## ✨ 🔬 Why God's Hand (AI agents + Blockchain) is the Solution?
+## 🔬 Why God's Hand (AI agents + Blockchain) is the Solution?
 
 ### 🤖 **Autonomous Disaster Detection & Analysis**
 - **Real-time News Monitoring**: MOSAIA AI agents continuously scan global news sources for tragic events and natural disasters
