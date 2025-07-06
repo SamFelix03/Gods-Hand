@@ -20,7 +20,7 @@
 
 ## 🌟 Introduction
 
-**God's Hand** is a revolutionary decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
+**God's Hand** is a decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through AI Agents and blockchain infra. 
 
 In a world where natural disasters strike without warning, traditional relief systems often fail due to..
 - bureaucratic delays
@@ -29,9 +29,9 @@ In a world where natural disasters strike without warning, traditional relief sy
 
 God's Hand transforms this paradigm by deploying **autonomous AI agents** that continuously monitor global events, instantly assess disaster situations, and facilitate **rapid, transparent, and democratically-governed relief funding**.
 
-Powered by **MOSAIA AI agents** running on **Phala's Trusted Execution Environments (TEE)** and secured by **Flow blockchain's smart contract infrastructure**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is immutably recorded on the **Flow  blockchain**, governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem that eliminates the systemic failures plaguing traditional relief systems.
+Powered by **MOSAIA AI agents** relying on **WeatherXM's Weather Data** running on **Phala's Trusted Execution Environments (TEE)** and secured by the **Flow blockchain**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is immutably recorded on the **Flow  blockchain**, governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem that eliminates the systemic failures plaguing traditional relief systems.
 
-**Revolutionary Donor Incentives**: God's Hand introduces the world's first **disaster relief raffle system** powered by **Flow's Verifiable Random Function (VRF)**. Every donation, regardless of amount, automatically enters donors into a transparent, tamper-proof raffle to win 5% of the total funds raised for each disaster event, creating unprecedented donor engagement and participation incentives.
+**Donor Incentives**: God's Hand introduces the world's first **disaster relief raffle system** powered by **Flow's VRF**. Every donation, regardless of amount, automatically enters donors into a transparent, tamper-proof raffle to win 5% of the total funds raised for each disaster event, creating unprecedented donor engagement and participation incentives.
 
 
 ## 🚨 The Problems in Current Systems
@@ -55,7 +55,7 @@ Traditional disaster relief platforms fail due to:
 
 ### 🤖 **Autonomous Disaster Detection & Analysis**
 - **Real-time News Monitoring**: MOSAIA AI agents continuously scan global news sources for tragic events and natural disasters
-- **Intelligent Location Identification**: Advanced NLP algorithms pinpoint affected geographical areas with precision
+- **Intelligent Location Identification**: The bbox Agent pinpoints affected geographical areas with precision
 - **Weather Data Integration**: Leverages WeatherXM API to fetch critical weather conditions for comprehensive situation analysis
 - **Smart Fund Allocation**: AI-driven assessment determines appropriate relief fund amounts based on severity, population impact, and weather conditions
 
@@ -74,7 +74,7 @@ Traditional disaster relief platforms fail due to:
 - **Community Governance**: Final fund allocation decisions made through democratic voting consensus
 
 ### 🔐 **Secure Identity Verification**
-- **zkPassport Integration**: Cutting-edge zero-knowledge proof technology ensures voter identity verification
+- **zkPassport Integration**: Zero-knowledge proof technology ensures voter identity verification
 - **Fool-proof Voting System**: Anonymous yet verified voting prevents fraud and manipulation
 - **Privacy-First Approach**: Identity verification without compromising personal data privacy
 
@@ -135,7 +135,7 @@ Traditional disaster relief platforms fail due to:
 6. **Fact-Check Agent Analysis**: AI agent `(ID: 686656aaf14ab5c885e431ce)` analyzes claims using:
    - **Cross-referencing** with original disaster data and news sources
    - **Feasibility assessment** of proposed relief activities
-   - **Amount calculation** based on disaster severity and organizational capacity
+   - **Amount calculation** based on disaster severity, amount present in the disaster pool of that specific disaster and organizational capacity
    - **Evidence validation** for legitimacy verification
 7. **Automatic Approval/Rejection**: Claims are instantly approved for voting or rejected based on AI analysis
 
@@ -168,7 +168,7 @@ Traditional disaster relief platforms fail due to:
 
 ## 🤖 **Mosaia Integration**
 
-God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
+God's Hand operates through an **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
 
 ### 🔍 **Disaster Creation Pipeline Agents**
 
@@ -291,7 +291,7 @@ God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** th
 
 ### **The Lottery Experience**
 
-The GodsHand platform introduces an innovative gamification layer that transforms disaster relief from a purely altruistic act into an engaging experience:
+The GodsHand platform introduces a gamification layer that transforms disaster relief from a purely altruistic act into an engaging experience:
 
 #### **🎯 How It Works**
 1. **Donation Entry**: Every donation automatically enters the donor into the lottery
