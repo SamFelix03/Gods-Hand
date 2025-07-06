@@ -7,7 +7,6 @@
 - [ Introduction](#-introduction)
 - [ The Problems in Current Systems](#-the-problems-in-current-systems)
 - [ Why God's Hand (AI agents + Blockchain) is the Solution?](#-why-gods-hand-ai-agents--blockchain-is-the-solution)
-- [ Key Features](#-key-features)
 
 ### **🏗️ Architecture & Pipeline**
 - [ How It's Made: The Disaster Creation Pipeline](#️-how-its-made-the-disaster-creation-pipeline)
