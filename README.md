@@ -1,6 +1,24 @@
 # God's Hand
 *"Where Heaven Hears, and Humanity Helps — One Gift at a Time."*
 
+## 📋 **Table of Contents**
+
+### **📖 Overview**
+- [🌟 Introduction](#-introduction)
+- [🚨 The Problems in Current Systems](#-the-problems-in-current-systems)
+- [🔬 Why God's Hand (AI agents + Blockchain) is the Solution?](#-why-gods-hand-ai-agents--blockchain-is-the-solution)
+- [✨ Key Features](#-key-features)
+
+### **🏗️ Architecture & Pipeline**
+- [🏗️ How It's Made: The Disaster Creation Pipeline](#️-how-its-made-the-disaster-creation-pipeline)
+- [🗳️ The Democratic Verification & Distribution Pipeline](#️-the-democratic-verification--distribution-pipeline)
+
+### **🔧 Core Integrations**
+- [🔧 Core Integrations](#-core-integrations)
+- [🤖 Mosaia Integration](#-mosaia-integration)
+- [⛓️ Flow Integration](#️-flow-integration)
+- [🌤️ WeatherXM Integration](#️-weatherxm-integration)
+
 ## 🌟 Introduction
 
 **God's Hand** is a revolutionary decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
