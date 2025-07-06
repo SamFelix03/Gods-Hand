@@ -263,3 +263,167 @@ After disasters are detected and funding campaigns are created, God's Hand imple
 - **Sustainable Model**: 95% of funds still reach disaster relief while incentivizing participation
 
 This comprehensive verification and distribution system ensures that **every dollar donated reaches legitimate relief efforts** while **democratically empowering communities** to make funding decisions and **rewarding generous donors** through fair, transparent raffles.
+
+Mosaia Integration
+
+God's Hand operates through a sophisticated **autonomous AI agent ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **5-agent disaster creation pipeline** works
+
+### 🔍 **Agent Architecture Overview**
+
+#### **1. Disaster Search Agent** `(mosaia ID: 68660a4aeef377abf1f7443f)`
+- **Purpose**: Continuously monitors global news sources for natural disasters and tragic events using **EXA search**.
+- **Function**: Identifies breaking disaster events, extracts key details (title, description, location, source links), and triggers the pipeline workflow
+- **Line of Code**
+  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L57-L76
+
+#### **2. BBOX Identifier Agent** `(mosaia ID: 6864d6cbca5744854d34c998)`
+- **Purpose**: Converts textual disaster locations into precise geographical bounding boxes using the **Bounding Box Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
+- **Function**: Takes disaster location data and generates accurate latitude/longitude coordinates to define the affected geographical area
+
+#### **3. WeatherXM Agent** `(mosaia ID: 6864dd95ade4d61675d45e4d)`
+- **Purpose**: Fetches real-time weather data from active weather stations within the disaster zone using **WeatherXM BBox Weather Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
+- **Function**: Provides crucial meteorological context including temperature, humidity, precipitation, wind patterns, and atmospheric conditions. This data provided by WeatherXM is **CRUCIAL** for our agent to make an informed decision on disaster severity.
+
+#### **4. Disaster Analysis Agent** `(mosaia ID: 6866162ee2d11c774d448a27)`
+- **Purpose**: Performs comprehensive disaster severity analysis by combining news data with weather intelligence to determine appropriate relief funding
+- **Function**: Calculates required fund amounts in USD, assesses disaster impact severity, and provides detailed analysis for smart contract deployment
+
+#### **5. Tweet Agent** `(mosaia ID: 6864e70f77520411d032518a)`
+- **Purpose**: Automatically generates and publishes disaster awareness content to Twitter using **Post to X Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
+- **Function**: Creates compelling tweets with disaster details, funding requirements, and source links to maximize public engagement and donations
+
+### 📊 **Verification Flow Architecture**
+
+#### **6. Fact-Check Agent** `(mosaia ID: 686656aaf14ab5c885e431ce)`
+- **Purpose**: Analyzes NGO funding requests using AI-powered fact-checking to verify legitimacy and determine appropriate funding amounts
+- **Function**: Cross-references organization claims with disaster data, evaluates project feasibility, and calculates justified funding amounts based on evidence
+
+#### **7. Disaster Voting Agent** `(mosaia ID: 6866646ff14ab5c885e4386d)`
+- **Purpose**: Processes community voting results and executes final funding decisions on the Flow blockchain
+- **Function**: Aggregates verified votes, determines consensus, and automatically unlocks funds or rejects claims based on democratic decision-making
+
+### 📊 **Tools Used**
+# BBOX Identifier Tool
+This tool translates a human-readable location (e.g., "Mumbai, India") into geographic coordinates and a bounding box, which defines the region's spatial extent.
+
+## How it works:
+1. You send a location in human-readable format
+2. The tool makes a request to the Geoapify API
+3. The Boundary Box values of that specific location is returned, like this:
+   
+  min_latitude: minLat,
+  max_latitude: maxLat,
+  min_longitude: minLon,
+  max_longitude: maxLon
+
+## Required Environment Variables
+1. Geoapify API Key
+
+# WeatherXM tool
+This tool integrates WeatherXM to provide real-time, hyperlocal weather data for disaster assessment and relief planning. The data collected from WeatherXM's decentralized network of weather stations is sent to the agent.
+
+## How it works:
+1. Enter the bbox values of a specific location
+2. Using the bounding box, the system queries the WeatherXM endpoint which returns a list of all weather stations located within the defined geographical bounds.
+3. The response is filtered to include only active stations, i.e., those that have reported recent weather data.
+4. Up to 5 randomly selected active stations are queried for their latest observations.
+5. Each response includes:
+- Observation data: temperature, precipitation, wind speed/gust, humidity, UV index, solar irradiance, etc.
+- Location metadata: latitude, longitude, elevation
+- Health scores: data quality, location accuracy
+6. These details provide granular, real-time insights into the current weather conditions around a specific location.
+
+## Required Environment Variables
+1. WeatherXM API key
+
+# Mosaia Twitter Poster Tool
+A Mosaia Tool that helps your agent post tweets using the Twitter API.
+
+## What It Does
+This tool allows your Mosaia agent to post tweets by sending a message to the Twitter API using your account credentials.
+
+## Required Environment Variables
+- TWITTER_API_KEY
+
+- TWITTER_API_SECRET
+
+- TWITTER_ACCESS_TOKEN
+
+- TWITTER_ACCESS_SECRET
+
+
+Flow Integration
+
+## 🏗️ Smart Contract Architecture
+
+### Key Components
+
+#### 1. Disaster Management
+- **Disaster Creation**: Agent creates a disaster relief campaign with title, metadata, and target amount
+- **Unique Identification**: Each disaster gets a unique hash based on creator, timestamp, and metadata
+- **Status Control**: Disasters can be activated/deactivated by the Agent
+
+#### 2. Donation System
+- **Direct Donations**: Users can donate Flow directly to specific disasters
+- **Contribution Tracking**: Individual donor contributions are tracked per disaster
+- **Funding Progress**: Real-time calculation of funding progress as percentage of target
+
+#### 3. Fund Management
+- **Secure Storage**: All donations are held securely in the smart contract
+- **Controlled Release**: Only the Agent running inside the TEE can unlock funds
+  
+## 🎮 Gamification Through VRF Raffle
+
+### The Lottery Experience
+
+The GodsHand platform introduces an innovative gamification layer that transforms disaster relief from a purely altruistic act into an engaging experience:
+
+#### How It Works
+1. **Donation Entry**: Every donation automatically enters the donor into the lottery
+2. **Unique Participation**: Each unique donor address gets one entry (regardless of donation amount)
+3. **Fair Selection**: VRF ensures truly random winner selection
+4. **Prize Distribution**: Winner receives 5% of the total disaster fund
+5. **Transparency**: All lottery results are publicly verifiable
+
+#### VRF Integration Benefits
+- **Verifiable Randomness**: Cadence Arch provides cryptographically secure random numbers
+- **Fairness**: No manipulation possible by contract owner or disaster creator
+- **Transparency**: Random number generation is publicly verifiable
+- **Decentralization**: Relies on external VRF service, not contract-controlled randomness
+
+#### Psychological Impact
+- **Increased Engagement**: Donors are motivated by the chance to win
+- **Repeated Participation**: Gamification encourages continued donations
+- **Community Building**: Creates excitement and discussion around disaster relief
+- **Viral Potential**: Lottery winners may share their experience, attracting more donors
+
+WeatherXM integration
+
+WeatherXM powers the agent with real-time, hyperlocal weather data from WeatherXM’s decentralized network of weather stations — serving as the primary and trusted data source for disaster detection, severity analysis, and fund allocation
+
+#### Workflow Overview:
+- The agent begins by receiving a bounding box (bbox) defining the geographical area of concern.
+- It queries WeatherXM’s API to locate all weather stations within this region.
+- Only active stations—those providing recent and verifiable data—are considered.
+- Up to five active stations are randomly sampled in the specified location.
+
+Each station provides:
+**Detailed weather observations**
+- Temperature
+- Feels Like
+- Dew Point
+- Humidity
+- Wind Speed
+- Wind Gust
+- Wind Direction
+- Pressure
+- UV Index
+
+The agent heavily relies on this granular, real-time data to:
+
+- Evaluate the intensity and scope of the disaster, such as identifying flooding risks, wind damage potential, or heatwaves.
+- Determine the urgency and severity of the situation in specific micro-locations.
+- Autonomously calculate and allocate appropriate relief funding, ensuring aid reaches those most impacted.
+
+
+
