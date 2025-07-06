@@ -162,6 +162,7 @@ Traditional disaster relief platforms fail due to:
 15. **Automatic Prize Distribution**: Winner receives 5% of total donated amount instantly
 16. **Public Transparency**: Winner address and transaction hash publicly visible
 
+
 ## 🤖 **Mosaia Integration**
 
 God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
@@ -309,6 +310,7 @@ The GodsHand platform introduces an innovative gamification layer that transform
 - **Viral Potential**: Lottery winners may share their experience, attracting more donors
 
 **📁 Line of Code**: [Flow Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract)
+
 
 ## 🌤️ WeatherXM Integration
 
