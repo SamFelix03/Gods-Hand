@@ -38,9 +38,9 @@ Powered by **MOSAIA AI agents** running on **Phala's Trusted Execution Environme
 
 Traditional disaster relief platforms fail due to:
 
-**1. Fraud & Scams**
-- **Fake campaigns** using synthetic identities
-- **$23 billion projected fraud losses** by 2030
+**1. Lack of Transparency**
+- **Opaque fund allocation** with no visibility into how donations are spent
+- **Hidden administrative costs** and unclear overhead expenses
 
 **2. Critical Delays**
 - **Bureaucratic bottlenecks** slow fund distribution
