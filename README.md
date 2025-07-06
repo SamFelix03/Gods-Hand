@@ -310,13 +310,13 @@ The GodsHand platform introduces an innovative gamification layer that transform
 
 **📁 Line of Code**: [Flow Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract)
 
-### 🌦WeatherXM integration
+## 🌤️ WeatherXM Integration
 
-WeatherXM powers the agent with real-time, hyperlocal weather data from WeatherXM’s decentralized network of weather stations — serving as the primary and trusted data source for disaster detection, severity analysis, and fund allocation
+WeatherXM powers the agent with real-time, hyperlocal weather data from WeatherXM's decentralized network of weather stations — serving as the primary and trusted data source for disaster detection, severity analysis, and fund allocation
 
 #### Workflow Overview:
 - The agent begins by receiving a bounding box (bbox) defining the geographical area of concern.
-- It queries WeatherXM’s API to locate all weather stations within this region.
+- It queries WeatherXM's API to locate all weather stations within this region.
 - Only active stations—those providing recent and verifiable data—are considered.
 - Up to five active stations are randomly sampled in the specified location.
 
