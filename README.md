@@ -1,6 +1,12 @@
 # God's Hand
 *"Where Heaven Hears, and Humanity Helps — One Gift at a Time."*
 
+Applied tracks/Sponsors: 
+ 1. Decentralized Economies, Governance & Science. (Fresh Code)
+ 2. Flow: ⚡️ Most Killer App Potential
+ 3. 🧠 Mosaia challenge: Beat ChatGPT - build an AI that uses tools and trusted data to perform 10x better
+ 4. ⚡️ WeatherXM Ground the Next Internet in Real-World Signals
+
 ## 📋 **Table of Contents**
 
 ### **📖 Overview**
