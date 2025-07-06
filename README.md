@@ -162,18 +162,6 @@ Traditional disaster relief platforms fail due to:
 15. **Automatic Prize Distribution**: Winner receives 5% of total donated amount instantly
 16. **Public Transparency**: Winner address and transaction hash publicly visible
 
-### 🛡️ **Democratic Safeguards & Security**
-
-#### **Identity Verification**
-- **zkPassport Integration**: Zero-knowledge age verification prevents underage voting
-- **Unique Voter Identification**: Cryptographic hashing prevents double-voting
-- **Privacy Preservation**: Voter identities remain anonymous while maintaining verification
-
-#### **AI Fact-Checking**
-- **Multi-Source Validation**: Claims verified against disaster data, news sources, and organizational history
-- **Objective Assessment**: AI removes human bias from initial claim evaluation
-- **Transparent Scoring**: All verification factors and amounts are publicly auditable
-
 ## 🤖 **Mosaia Integration**
 
 God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
