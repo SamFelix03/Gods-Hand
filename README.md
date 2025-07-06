@@ -94,30 +94,6 @@ Traditional funding platforms face systemic issues that undermine their effectiv
 
 ## 🏗️ How It's Made: The Disaster Creation Pipeline
 
-God's Hand operates through a sophisticated **autonomous AI agent ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **5-agent disaster creation pipeline** works:
-
-### 🔍 **Agent Architecture Overview**
-
-#### **1. Disaster Search Agent** `(mosaia ID: 68660a4aeef377abf1f7443f)`
-- **Purpose**: Continuously monitors global news sources for natural disasters and tragic events using **EXA search**.
-- **Function**: Identifies breaking disaster events, extracts key details (title, description, location, source links), and triggers the pipeline workflow
-
-#### **2. BBOX Identifier Agent** `(mosaia ID: 6864d6cbca5744854d34c998)`
-- **Purpose**: Converts textual disaster locations into precise geographical bounding boxes using the **Bounding Box Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
-- **Function**: Takes disaster location data and generates accurate latitude/longitude coordinates to define the affected geographical area
-
-#### **3. WeatherXM Agent** `(mosaia ID: 6864dd95ade4d61675d45e4d)`
-- **Purpose**: Fetches real-time weather data from active weather stations within the disaster zone using **WeatherXM BBox Weather Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
-- **Function**: Provides crucial meteorological context including temperature, humidity, precipitation, wind patterns, and atmospheric conditions. This data provided by WeatherXM is **CRUCIAL** for our agent to make an informed decision on disaster severity.
-
-#### **4. Disaster Analysis Agent** `(mosaia ID: 6866162ee2d11c774d448a27)`
-- **Purpose**: Performs comprehensive disaster severity analysis by combining news data with weather intelligence to determine appropriate relief funding
-- **Function**: Calculates required fund amounts in USD, assesses disaster impact severity, and provides detailed analysis for smart contract deployment
-
-#### **5. Tweet Agent** `(mosaia ID: 6864e70f77520411d032518a)`
-- **Purpose**: Automatically generates and publishes disaster awareness content to Twitter using **Post to X Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
-- **Function**: Creates compelling tweets with disaster details, funding requirements, and source links to maximize public engagement and donations
-
 ### 🔄 **Complete Workflow: From Detection to Deployment**
 
 <img width="1401" alt="Workflow Diagram" src="https://github.com/user-attachments/assets/a13c0ab3-7f7b-4a31-948f-e8952900300a" />
@@ -141,16 +117,6 @@ God's Hand operates through a sophisticated **autonomous AI agent ecosystem** th
 8. **DynamoDB Storage** maintains comprehensive disaster records with unique hashes and timestamps
 9. **Pipeline Completion** triggers next monitoring cycle and maintains continuous operation
 
-### 🧠 **Intelligent Agent Collaboration**
-
-The agents work in **perfect synchronization** through:
-
-- **Sequential Data Flow**: Each agent's output becomes the next agent's input, creating a seamless information pipeline
-- **Error Handling**: Built-in retry mechanisms and fallback procedures ensure pipeline reliability
-- **Real-time Processing**: Entire workflow from detection to deployment completes within minutes
-- **Continuous Operation**: Pipeline runs autonomously 24/7 with hourly monitoring cycles
-- **Cross-Validation**: Multiple data sources and weather stations provide accuracy verification
-
 ### 🔒 **Security & Reliability Features**
 
 - **TEE-Hosted Execution**: All agents run in Trusted Execution Environments for maximum security
@@ -159,18 +125,6 @@ The agents work in **perfect synchronization** through:
 - **Automated Failsafes**: Pipeline includes comprehensive error handling and recovery mechanisms
 
 ## 🗳️ The Democratic Verification & Distribution Pipeline
-
-After disasters are detected and funding campaigns are created, God's Hand implements a **sophisticated verification and voting system** to ensure transparent, democratic allocation of relief funds. Here's how the complete user journey unfolds:
-
-### 📊 **Verification Flow Architecture**
-
-#### **6. Fact-Check Agent** `(mosaia ID: 686656aaf14ab5c885e431ce)`
-- **Purpose**: Analyzes NGO funding requests using AI-powered fact-checking to verify legitimacy and determine appropriate funding amounts
-- **Function**: Cross-references organization claims with disaster data, evaluates project feasibility, and calculates justified funding amounts based on evidence
-
-#### **7. Disaster Voting Agent** `(mosaia ID: 6866646ff14ab5c885e4386d)`
-- **Purpose**: Processes community voting results and executes final funding decisions on the Flow blockchain
-- **Function**: Aggregates verified votes, determines consensus, and automatically unlocks funds or rejects claims based on democratic decision-making
 
 ### 🔄 **Complete User Journey: From Donation to Distribution**
 
@@ -232,38 +186,6 @@ After disasters are detected and funding campaigns are created, God's Hand imple
 - **Objective Assessment**: AI removes human bias from initial claim evaluation
 - **Transparent Scoring**: All verification factors and amounts are publicly auditable
 
-#### **Blockchain Immutability**
-- **Tamper-Proof Records**: All votes, decisions, and transactions permanently recorded
-- **Smart Contract Automation**: Human intervention impossible once voting concludes
-- **Public Auditability**: Complete transparency of all fund movements and decisions
-
-#### **Consensus Mechanisms**
-- **Democratic Decision-Making**: Community consensus required for all fund distributions
-- **Minority Protection**: Multiple voting options ensure nuanced decision-making
-- **Automatic Processing**: No human gatekeepers in final fund distribution
-
-### 🎰 **Revolutionary Raffle Incentive System**
-
-#### **Flow VRF-Powered Fair Selection**
-- **Cryptographic Randomness**: Flow's VRF provides provably fair, verifiable random winner selection
-- **Equal Opportunity**: Every donor has equal chances regardless of donation amount
-- **Automatic Execution**: Smart contract automatically triggers raffle after 72-hour period
-- **Transparent Process**: Random seed and selection process publicly auditable on blockchain
-
-#### **Prize Distribution Mechanics**
-- **5% Prize Pool**: Winner receives exactly 5% of total disaster donations
-- **Instant Transfer**: Prize automatically transferred upon winner selection
-- **Gas-Free Distribution**: All transaction fees covered by platform
-- **Public Recognition**: Winner announcement and transaction hash publicly displayed
-
-#### **Engagement Psychology**
-- **Continuous Incentive**: Every donation creates potential for significant returns
-- **Time-Limited Excitement**: 72-hour countdown creates urgency and engagement
-- **Community Building**: Raffle creates shared experience among all donors
-- **Sustainable Model**: 95% of funds still reach disaster relief while incentivizing participation
-
-This comprehensive verification and distribution system ensures that **every dollar donated reaches legitimate relief efforts** while **democratically empowering communities** to make funding decisions and **rewarding generous donors** through fair, transparent raffles.
-
 ## 🤖 **Mosaia Integration**
 
 God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
@@ -273,39 +195,39 @@ God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** th
 #### **1. Disaster Search Agent** `(mosaia ID: 68660a4aeef377abf1f7443f)`
 - **🎯 Purpose**: Continuously monitors global news sources for natural disasters and tragic events using **EXA search**
 - **⚡ Function**: Identifies breaking disaster events, extracts key details (title, description, location, source links), and triggers the pipeline workflow
-- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L57-L76)
+- **📁 Line of Code**: [Disaster Search Agent](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L57-L76)
 
 #### **2. BBOX Identifier Agent** `(mosaia ID: 6864d6cbca5744854d34c998)`
 - **🎯 Purpose**: Converts textual disaster locations into precise geographical bounding boxes using the **Bounding Box Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
 - **⚡ Function**: Takes disaster location data and generates accurate latitude/longitude coordinates to define the affected geographical area
-- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L78-L90)
+- **📁 Line of Code**: [BBOX Identifier Agent](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L78-L90)
 
 #### **3. WeatherXM Agent** `(mosaia ID: 6864dd95ade4d61675d45e4d)`
 - **🎯 Purpose**: Fetches real-time weather data from active weather stations within the disaster zone using **WeatherXM BBox Weather Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
 - **⚡ Function**: Provides crucial meteorological context including temperature, humidity, precipitation, wind patterns, and atmospheric conditions. This data provided by WeatherXM is **CRUCIAL** for our agent to make an informed decision on disaster severity
-- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L92-L104)
+- **📁 Line of Code**: [WeatherXM Agent](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L92-L104)
 
 #### **4. Disaster Analysis Agent** `(mosaia ID: 6866162ee2d11c774d448a27)`
 - **🎯 Purpose**: Performs comprehensive disaster severity analysis by combining news data with weather intelligence to determine appropriate relief funding
 - **⚡ Function**: Calculates required fund amounts in USD, assesses disaster impact severity, and provides detailed analysis for smart contract deployment
-- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L106-L119)
+- **📁 Line of Code**: [Disaster Analysis Agent](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L106-L119)
 
 #### **5. Tweet Agent** `(mosaia ID: 6864e70f77520411d032518a)`
 - **🎯 Purpose**: Automatically generates and publishes disaster awareness content to Twitter using **Post to X Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
 - **⚡ Function**: Creates compelling tweets with disaster details, funding requirements, and source links to maximize public engagement and donations
-- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L204-L215)
+- **📁 Line of Code**: [Tweet Agent](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L204-L215)
 
 ### 🗳️ **Verification Flow Architecture**
 
 #### **6. Fact-Check Agent** `(mosaia ID: 686656aaf14ab5c885e431ce)`
 - **🎯 Purpose**: Analyzes NGO funding requests using AI-powered fact-checking to verify legitimacy and determine appropriate funding amounts
 - **⚡ Function**: Cross-references organization claims with disaster data, evaluates project feasibility, and calculates justified funding amounts based on evidence
-- **📁 Line of Code**: [Voting-Verification Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L263-L291)
+- **📁 Line of Code**: [Fact Checking Agent](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L263-L291)
 
-#### **7. Disaster Voting Agent** `(mosaia ID: 6866646ff14ab5c885e4386d)`
+#### **7. Disaster Consensus Handling Agent** `(mosaia ID: 6866646ff14ab5c885e4386d)`
 - **🎯 Purpose**: Processes community voting results and executes final funding decisions on the Flow blockchain
 - **⚡ Function**: Aggregates verified votes, determines consensus, and automatically unlocks funds or rejects claims based on democratic decision-making
-- **📁 Line of Code**: [Voting-Verification Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L565-L586)
+- **📁 Line of Code**: [Votes Handling Agent](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L565-L586)
 
 ### 🛠️ **Mosaia Tools Integration**
 
@@ -412,7 +334,7 @@ The GodsHand platform introduces an innovative gamification layer that transform
 
 **📁 Line of Code**: [Flow Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract)
 
-### WeatherXM integration
+### 🌦WeatherXM integration
 
 WeatherXM powers the agent with real-time, hyperlocal weather data from WeatherXM’s decentralized network of weather stations — serving as the primary and trusted data source for disaster detection, severity analysis, and fund allocation
 
@@ -441,4 +363,4 @@ The agent heavily relies on this granular, real-time data to:
 - Autonomously calculate and allocate appropriate relief funding, ensuring aid reaches those most impacted.
 
 ## Line of Code
-https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool
+**📁 Line of Code**: [WeatherXM](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool)
