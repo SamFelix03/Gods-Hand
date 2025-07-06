@@ -14,7 +14,6 @@
 - [🗳️ The Democratic Verification & Distribution Pipeline](#️-the-democratic-verification--distribution-pipeline)
 
 ### **🔧 Core Integrations**
-- [🔧 Core Integrations](#-core-integrations)
 - [🤖 Mosaia Integration](#-mosaia-integration)
 - [⛓️ Flow Integration](#️-flow-integration)
 - [🌤️ WeatherXM Integration](#️-weatherxm-integration)
