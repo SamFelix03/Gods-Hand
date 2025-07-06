@@ -264,166 +264,153 @@ After disasters are detected and funding campaigns are created, God's Hand imple
 
 This comprehensive verification and distribution system ensures that **every dollar donated reaches legitimate relief efforts** while **democratically empowering communities** to make funding decisions and **rewarding generous donors** through fair, transparent raffles.
 
-### Mosaia Integration
+## 🤖 **Mosaia Integration**
 
-God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works
+God's Hand operates through a sophisticated **Autonomous AI agent Ecosystem** that transforms disaster detection from reactive to proactive. Here's how our **disaster creation pipeline** works:
+
+### 🔍 **Disaster Creation Pipeline Agents**
 
 #### **1. Disaster Search Agent** `(mosaia ID: 68660a4aeef377abf1f7443f)`
-- **Purpose**: Continuously monitors global news sources for natural disasters and tragic events using **EXA search**.
-- **Function**: Identifies breaking disaster events, extracts key details (title, description, location, source links), and triggers the pipeline workflow
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L57-L76
+- **🎯 Purpose**: Continuously monitors global news sources for natural disasters and tragic events using **EXA search**
+- **⚡ Function**: Identifies breaking disaster events, extracts key details (title, description, location, source links), and triggers the pipeline workflow
+- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L57-L76)
 
 #### **2. BBOX Identifier Agent** `(mosaia ID: 6864d6cbca5744854d34c998)`
-- **Purpose**: Converts textual disaster locations into precise geographical bounding boxes using the **Bounding Box Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
-- **Function**: Takes disaster location data and generates accurate latitude/longitude coordinates to define the affected geographical area
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L78-L90
+- **🎯 Purpose**: Converts textual disaster locations into precise geographical bounding boxes using the **Bounding Box Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
+- **⚡ Function**: Takes disaster location data and generates accurate latitude/longitude coordinates to define the affected geographical area
+- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L78-L90)
 
 #### **3. WeatherXM Agent** `(mosaia ID: 6864dd95ade4d61675d45e4d)`
-- **Purpose**: Fetches real-time weather data from active weather stations within the disaster zone using **WeatherXM BBox Weather Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
-- **Function**: Provides crucial meteorological context including temperature, humidity, precipitation, wind patterns, and atmospheric conditions. This data provided by WeatherXM is **CRUCIAL** for our agent to make an informed decision on disaster severity.
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L92-L104
+- **🎯 Purpose**: Fetches real-time weather data from active weather stations within the disaster zone using **WeatherXM BBox Weather Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
+- **⚡ Function**: Provides crucial meteorological context including temperature, humidity, precipitation, wind patterns, and atmospheric conditions. This data provided by WeatherXM is **CRUCIAL** for our agent to make an informed decision on disaster severity
+- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L92-L104)
 
 #### **4. Disaster Analysis Agent** `(mosaia ID: 6866162ee2d11c774d448a27)`
-- **Purpose**: Performs comprehensive disaster severity analysis by combining news data with weather intelligence to determine appropriate relief funding
-- **Function**: Calculates required fund amounts in USD, assesses disaster impact severity, and provides detailed analysis for smart contract deployment
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L106-L119
+- **🎯 Purpose**: Performs comprehensive disaster severity analysis by combining news data with weather intelligence to determine appropriate relief funding
+- **⚡ Function**: Calculates required fund amounts in USD, assesses disaster impact severity, and provides detailed analysis for smart contract deployment
+- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L106-L119)
 
 #### **5. Tweet Agent** `(mosaia ID: 6864e70f77520411d032518a)`
-- **Purpose**: Automatically generates and publishes disaster awareness content to Twitter using **Post to X Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
-- **Function**: Creates compelling tweets with disaster details, funding requirements, and source links to maximize public engagement and donations
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L204-L215
+- **🎯 Purpose**: Automatically generates and publishes disaster awareness content to Twitter using **Post to X Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
+- **⚡ Function**: Creates compelling tweets with disaster details, funding requirements, and source links to maximize public engagement and donations
+- **📁 Line of Code**: [Disaster Creation Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/d5f5e57eed3797537fce0dba1f021af211e68293/Mosaia%20Agents/Disaster%20Creation%20Pipeline/main.py#L204-L215)
 
-### 📊 **Verification Flow Architecture**
+### 🗳️ **Verification Flow Architecture**
 
 #### **6. Fact-Check Agent** `(mosaia ID: 686656aaf14ab5c885e431ce)`
-- **Purpose**: Analyzes NGO funding requests using AI-powered fact-checking to verify legitimacy and determine appropriate funding amounts
-- **Function**: Cross-references organization claims with disaster data, evaluates project feasibility, and calculates justified funding amounts based on evidence
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L263-L291
+- **🎯 Purpose**: Analyzes NGO funding requests using AI-powered fact-checking to verify legitimacy and determine appropriate funding amounts
+- **⚡ Function**: Cross-references organization claims with disaster data, evaluates project feasibility, and calculates justified funding amounts based on evidence
+- **📁 Line of Code**: [Voting-Verification Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L263-L291)
 
 #### **7. Disaster Voting Agent** `(mosaia ID: 6866646ff14ab5c885e4386d)`
-- **Purpose**: Processes community voting results and executes final funding decisions on the Flow blockchain
-- **Function**: Aggregates verified votes, determines consensus, and automatically unlocks funds or rejects claims based on democratic decision-making
-- **Line of Code**
-  https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L565-L586
+- **🎯 Purpose**: Processes community voting results and executes final funding decisions on the Flow blockchain
+- **⚡ Function**: Aggregates verified votes, determines consensus, and automatically unlocks funds or rejects claims based on democratic decision-making
+- **📁 Line of Code**: [Voting-Verification Pipeline](https://github.com/SamFelix03/Gods-Hand/blob/1dd11509d938f5811c93d6ada3397f10882080a9/Mosaia%20Agents/Voting-Verification%20Pipeline/main.py#L565-L586)
 
-### 📊 **Tools Used**
-# BBOX Identifier Tool
-# mosaia ID: 6864d67fca5744854d34c8c6
-This tool translates a human-readable location (e.g., "Mumbai, India") into geographic coordinates and a bounding box, which defines the region's spatial extent.
+### 🛠️ **Mosaia Tools Integration**
 
-## How it works:
+#### **1. BBOX Identifier Tool** `(mosaia ID: 6864d67fca5744854d34c8c6)`
+**🎯 Purpose**: Translates a human-readable location (e.g., "Mumbai, India") into geographic coordinates and a bounding box, which defines the region's spatial extent.
+
+**⚡ How it works**:
 1. You send a location in human-readable format
 2. The tool makes a request to the Geoapify API
 3. The Boundary Box values of that specific location is returned, like this:
    
-  min_latitude: minLat,
-  max_latitude: maxLat,
-  min_longitude: minLon,
-  max_longitude: maxLon
+   ```
+   min_latitude: minLat,
+   max_latitude: maxLat,
+   min_longitude: minLon,
+   max_longitude: maxLon
+   ```
 
-## Required Environment Variables
-1. Geoapify API Key
+**🔧 Required Environment Variables**:
+- `Geoapify API Key`
 
-## Line of Code
-https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/bboxtool
+**📁 Line of Code**: [BBOX Tool](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/bboxtool)
 
-# WeatherXM tool
-# mosaia ID: 6864dcc425ddf4f7d390d91b
-This tool integrates WeatherXM to provide real-time, hyperlocal weather data for disaster assessment and relief planning. The data collected from WeatherXM's decentralized network of weather stations is sent to the agent.
+#### **2. WeatherXM Tool** `(mosaia ID: 6864dcc425ddf4f7d390d91b)`
+**🎯 Purpose**: Integrates WeatherXM to provide real-time, hyperlocal weather data for disaster assessment and relief planning. The data collected from WeatherXM's decentralized network of weather stations is sent to the agent.
 
-## How it works:
+**⚡ How it works**:
 1. Enter the bbox values of a specific location
-2. Using the bounding box, the system queries the WeatherXM endpoint which returns a list of all weather stations located within the defined geographical bounds.
-3. The response is filtered to include only active stations, i.e., those that have reported recent weather data.
-4. Up to 5 randomly selected active stations are queried for their latest observations.
+2. Using the bounding box, the system queries the WeatherXM endpoint which returns a list of all weather stations located within the defined geographical bounds
+3. The response is filtered to include only active stations, i.e., those that have reported recent weather data
+4. Up to 5 randomly selected active stations are queried for their latest observations
 5. Each response includes:
-- Observation data: temperature, precipitation, wind speed/gust, humidity, UV index, solar irradiance, etc.
-- Location metadata: latitude, longitude, elevation
-- Health scores: data quality, location accuracy
-6. These details provide granular, real-time insights into the current weather conditions around a specific location.
+   - **Observation data**: temperature, precipitation, wind speed/gust, humidity, UV index, solar irradiance, etc.
+   - **Location metadata**: latitude, longitude, elevation
+   - **Health scores**: data quality, location accuracy
+6. These details provide granular, real-time insights into the current weather conditions around a specific location
 
-## Required Environment Variables
-1. WeatherXM API key
+**🔧 Required Environment Variables**:
+- `WeatherXM API key`
 
-## Line of Code
-https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool
+**📁 Line of Code**: [WeatherXM Tool](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool)
 
-# Mosaia Twitter Poster Tool
-# mosaia ID: 6864e68268d0c18b74da20e7
-A Mosaia Tool that helps your agent post tweets using the Twitter API.
+#### **3. Mosaia Twitter Poster Tool** `(mosaia ID: 6864e68268d0c18b74da20e7)`
+**🎯 Purpose**: A Mosaia Tool that helps your agent post tweets using the Twitter API.
 
-## What It Does
-This tool allows your Mosaia agent to post tweets by sending a message to the Twitter API using your account credentials.
+**⚡ What It Does**: This tool allows your Mosaia agent to post tweets by sending a message to the Twitter API using your account credentials.
 
-## Required Environment Variables
-- TWITTER_API_KEY
+**🔧 Required Environment Variables**:
+- `TWITTER_API_KEY`
+- `TWITTER_API_SECRET`
+- `TWITTER_ACCESS_TOKEN`
+- `TWITTER_ACCESS_SECRET`
 
-- TWITTER_API_SECRET
-
-- TWITTER_ACCESS_TOKEN
-
-- TWITTER_ACCESS_SECRET
-
-## Line of Code
-https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-TweetPosting-Tool
+**📁 Line of Code**: [Twitter Poster Tool](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-TweetPosting-Tool)
 
 
-### Flow Integration
+## ⛓️ **Flow Integration**
 
-## Deployed Contract
-https://evm-testnet.flowscan.io/address/0x700D3D55ec6FC21394A43b02496F320E02873114?tab=index
+### 📋 **Deployed Contract**
+**🔗 Contract Address**: [Flow Testnet Explorer](https://evm-testnet.flowscan.io/address/0x700D3D55ec6FC21394A43b02496F320E02873114?tab=index)
 
-## 🏗️ Smart Contract Architecture
+### 🏗️ **Smart Contract Architecture**
 
-### Key Components
+#### **Key Components**
 
-#### 1. Disaster Management
-- **Disaster Creation**: Agent creates a disaster relief campaign with title, metadata, and target amount
-- **Unique Identification**: Each disaster gets a unique hash based on creator, timestamp, and metadata
-- **Status Control**: Disasters can be activated/deactivated by the Agent
+##### **1. Disaster Management**
+- **🎯 Disaster Creation**: Agent creates a disaster relief campaign with title, metadata, and target amount
+- **🔐 Unique Identification**: Each disaster gets a unique hash based on creator, timestamp, and metadata
+- **⚙️ Status Control**: Disasters can be activated/deactivated by the Agent
 
-#### 2. Donation System
-- **Direct Donations**: Users can donate Flow directly to specific disasters
-- **Contribution Tracking**: Individual donor contributions are tracked per disaster
-- **Funding Progress**: Real-time calculation of funding progress as percentage of target
+##### **2. Donation System**
+- **💰 Direct Donations**: Users can donate Flow directly to specific disasters
+- **📊 Contribution Tracking**: Individual donor contributions are tracked per disaster
+- **📈 Funding Progress**: Real-time calculation of funding progress as percentage of target
 
-#### 3. Fund Management
-- **Secure Storage**: All donations are held securely in the smart contract
-- **Controlled Release**: Only the Agent running inside the TEE can unlock funds
+##### **3. Fund Management**
+- **🔒 Secure Storage**: All donations are held securely in the smart contract
+- **🎛️ Controlled Release**: Only the Agent running inside the TEE can unlock funds
   
-## 🎮 Gamification Through VRF Raffle
+## 🎰 **Gamification Through VRF Raffle**
 
-### The Lottery Experience
+### **The Lottery Experience**
 
 The GodsHand platform introduces an innovative gamification layer that transforms disaster relief from a purely altruistic act into an engaging experience:
 
-#### How It Works
-1. **Donation Entry**: Every donation automatically enters the donor into the lottery
-2. **Unique Participation**: Each unique donor address gets one entry (regardless of donation amount)
-3. **Fair Selection**: VRF ensures truly random winner selection
-4. **Prize Distribution**: Winner receives 5% of the total disaster fund
-5. **Transparency**: All lottery results are publicly verifiable
+#### **🎯 How It Works**
+1. **🎁 Donation Entry**: Every donation automatically enters the donor into the lottery
+2. **👤 Unique Participation**: Each unique donor address gets one entry (regardless of donation amount)
+3. **🎲 Fair Selection**: VRF ensures truly random winner selection
+4. **🏆 Prize Distribution**: Winner receives 5% of the total disaster fund
+5. **🔍 Transparency**: All lottery results are publicly verifiable
 
-#### VRF Integration Benefits
-- **Verifiable Randomness**: Cadence Arch provides cryptographically secure random numbers
-- **Fairness**: No manipulation possible by contract owner or disaster creator
-- **Transparency**: Random number generation is publicly verifiable
-- **Decentralization**: Relies on external VRF service, not contract-controlled randomness
+#### **🔐 VRF Integration Benefits**
+- **🔒 Verifiable Randomness**: Cadence Arch provides cryptographically secure random numbers
+- **⚖️ Fairness**: No manipulation possible by contract owner or disaster creator
+- **👁️ Transparency**: Random number generation is publicly verifiable
+- **🌐 Decentralization**: Relies on external VRF service, not contract-controlled randomness
 
-#### Psychological Impact
-- **Increased Engagement**: Donors are motivated by the chance to win
-- **Repeated Participation**: Gamification encourages continued donations
-- **Community Building**: Creates excitement and discussion around disaster relief
-- **Viral Potential**: Lottery winners may share their experience, attracting more donors
+#### **🧠 Psychological Impact**
+- **📈 Increased Engagement**: Donors are motivated by the chance to win
+- **🔄 Repeated Participation**: Gamification encourages continued donations
+- **🤝 Community Building**: Creates excitement and discussion around disaster relief
+- **📢 Viral Potential**: Lottery winners may share their experience, attracting more donors
 
-## Line of Code 
-https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract
+**📁 Line of Code**: [Flow Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract)
 
 ### WeatherXM integration
 
@@ -455,6 +442,3 @@ The agent heavily relies on this granular, real-time data to:
 
 ## Line of Code
 https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool
-
-
-
