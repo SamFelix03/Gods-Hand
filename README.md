@@ -17,6 +17,7 @@
 - [⛓️ Flow Integration](#️-flow-integration)
 - [🌤️ WeatherXM Integration](#️-weatherxm-integration)
 
+
 ## 🌟 Introduction
 
 **God's Hand** is a revolutionary decentralized disaster relief platform that bridges the gap between urgent humanitarian needs and global generosity through cutting-edge AI technology and blockchain infrastructure. 
@@ -31,6 +32,7 @@ God's Hand transforms this paradigm by deploying **autonomous AI agents** that c
 Powered by **MOSAIA AI agents** running on **Phala's Trusted Execution Environments (TEE)** and secured by **Flow blockchain's smart contract infrastructure**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is immutably recorded on the **Flow  blockchain**, governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem that eliminates the systemic failures plaguing traditional relief systems.
 
 **Revolutionary Donor Incentives**: God's Hand introduces the world's first **disaster relief raffle system** powered by **Flow's Verifiable Random Function (VRF)**. Every donation, regardless of amount, automatically enters donors into a transparent, tamper-proof raffle to win 5% of the total funds raised for each disaster event, creating unprecedented donor engagement and participation incentives.
+
 
 ## 🚨 The Problems in Current Systems
 
@@ -47,6 +49,7 @@ Traditional disaster relief platforms fail due to:
 **3. Zero Donor Incentives**
 - **No rewards** beyond moral satisfaction
 - **No engagement mechanisms** for repeat donations
+
 
 ## 🔬 Why God's Hand (AI agents + Blockchain) is the Solution?
 
