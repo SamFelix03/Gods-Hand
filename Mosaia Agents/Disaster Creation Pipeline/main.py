@@ -62,7 +62,7 @@ def run_disaster_flow():
 
     disaster_response = disaster_client.chat.completions.create(
         model="68660a4aeef377abf1f7443f",
-        messages=[{"role": "user", "content": "Find the recent natural disaster in Bangalore in May 2025"}],
+        messages=[{"role": "user", "content": "Find the recent natural disaster in the world"}],
     )
 
     disaster_output = disaster_response.choices[0].message.content.strip()
