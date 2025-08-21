@@ -198,6 +198,7 @@ import {
     const owner = privateKeyToAccount(formattedPrivateKey as `0x${string}`);
     
     // Create 7702 smart account
+    // @ts-ignore
     const account = await toSimple7702SmartAccount({ client, owner });
     return { account, owner };
   }

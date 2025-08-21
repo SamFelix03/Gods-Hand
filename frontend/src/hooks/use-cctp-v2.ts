@@ -198,7 +198,9 @@ export function useCrossChainTransfer() {
   const [error, setError] = useState<string | null>(null);
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [senderPrivateKey, setSenderPrivateKey] = useState<string>("");
+  const [senderPrivateKey, setSenderPrivateKey] = useState<string>(
+    import.meta.env.VITE_EVM_PRIVATE_KEY || import.meta.env.VITE_PRIVATE_KEY || ""
+  );
 
   const DEFAULT_DECIMALS = 6;
 
@@ -481,6 +483,7 @@ export function useCrossChainTransfer() {
       addLog("Sending USDC approval with USDC gas payment...");
 
       // Send the user operation for approval
+      // @ts-ignore
       const uoHash = await bundlerClient.sendUserOperation({
         account: smartAccount,
         calls: [
@@ -817,6 +820,11 @@ export function useCrossChainTransfer() {
     destinationAddress?: string,
   ) => {
     try {
+      // Validate private key is available
+      if (!senderPrivateKey) {
+        throw new Error("Private key not configured. Please set VITE_EVM_PRIVATE_KEY in your environment.");
+      }
+
       const numericAmount = parseUnits(amount, DEFAULT_DECIMALS);
       const destinationChainId = SupportedChainId.ETH_SEPOLIA;
       

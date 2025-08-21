@@ -160,12 +160,7 @@ export default function DonationModal({
       return;
     }
 
-    // Set the private key from user's wallet (this is handled by the CCTP hook internally)
-    // The hook will use MetaMask for transactions but needs private key for paymaster functionality
-    const privateKey = import.meta.env.VITE_EVM_PRIVATE_KEY;
-    if (privateKey) {
-      setSenderPrivateKey(privateKey);
-    }
+    // Private key is automatically loaded from environment variables in the hook
 
     // Move to transfer step and let the transfer progress
     setStep("transfer");
@@ -385,54 +380,21 @@ export default function DonationModal({
                       </div>
                     )}
 
-                    {/* USDC Balance Display OR Transfer Logs */}
-                    {currentStep === "idle" ? (
-                      <div className="mb-4 p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
-                        <div className="text-center">
-                          <p className="text-gray-800 font-['Cinzel'] text-sm">
-                            Your USDC Balance:
-                          </p>
-                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
-                            {isLoadingBalance ? (
-                              <span className="animate-pulse">Loading...</span>
-                            ) : (
-                              `${parseFloat(usdcBalance).toFixed(6)} USDC`
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="mb-4 p-3 bg-blue-100/30 rounded-lg border border-blue-200/50">
-                        <div className="mb-2">
-                          <p className="text-blue-800 font-['Cinzel'] text-sm font-bold">
-                            Transfer Progress:
-                          </p>
-                          <p className="text-blue-900 font-['Cinzel'] text-xs capitalize">
-                            {currentStep.replace('-', ' ')}
-                          </p>
-                        </div>
-                        <div className="max-h-24 overflow-y-auto space-y-1">
-                          {logs.length === 0 ? (
-                            <div className="text-xs text-blue-700 font-['Cinzel'] italic">
-                              Initializing transfer...
-                            </div>
+                    {/* USDC Balance Display */}
+                    <div className="mb-4 p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                      <div className="text-center">
+                        <p className="text-gray-800 font-['Cinzel'] text-sm">
+                          Your USDC Balance:
+                        </p>
+                        <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
+                          {isLoadingBalance ? (
+                            <span className="animate-pulse">Loading...</span>
                           ) : (
-                            logs.slice(-4).map((log, index) => (
-                              <div key={index} className="text-xs text-blue-700 font-['Cinzel'] leading-tight">
-                                {log.replace(/^\[\d{1,2}:\d{2}:\d{2}\s*[AP]M\]\s*/, '')}
-                              </div>
-                            ))
+                            `${parseFloat(usdcBalance).toFixed(6)} USDC`
                           )}
-                        </div>
-                        {error && (
-                          <div className="mt-2 p-2 bg-red-200/50 rounded border border-red-300/50">
-                            <p className="text-red-800 font-['Cinzel'] text-xs">
-                              ❌ {error}
-                            </p>
-                          </div>
-                        )}
+                        </p>
                       </div>
-                    )}
+                    </div>
 
                     <div className="mb-6">
                       <label className="block text-gray-900 font-['Cinzel'] font-bold mb-3 text-lg">
@@ -542,7 +504,7 @@ export default function DonationModal({
                            currentStep === "minting" ? "Minting USDC on destination..." :
                            currentStep === "completed" ? "Transfer completed successfully!" :
                            currentStep === "error" ? "Transfer failed" :
-                           currentStep.replace('-', ' ')}
+                           "Unknown status"}
                         </p>
                       </div>
                     </div>
