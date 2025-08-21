@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ethers } from "ethers";
-import { convertUsdToFlow, formatFlowAmount} from "../lib/utils";
-import { CONTRACT_ADDRESS, CONTRACT_ABI, FLOW_TESTNET_CONFIG } from "../lib/constants";
+import { useCrossChainTransfer } from "../hooks/use-cctp-v2";
+import { SUPPORTED_CHAINS, CHAIN_TO_CHAIN_NAME, SupportedChainId, CHAIN_RPC_URLS } from "../lib/chains";
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -31,294 +30,211 @@ export default function DonationModal({
   disasterHash,
   refreshDonations,
 }: DonationModalProps) {
-  const [step, setStep] = useState<"wallet" | "amount" | "success">("wallet");
+  const [step, setStep] = useState<"chain" | "amount" | "transfer" | "success">("chain");
+  const [selectedChain, setSelectedChain] = useState<SupportedChainId | null>(null);
   const [donationAmount, setDonationAmount] = useState<string>("");
-  const [flowAmount, setFlowAmount] = useState<number>(0);
-  const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("");
-  const [connectedAccount, setConnectedAccount] = useState<string>("");
-  const [isConvertingCurrency, setIsConvertingCurrency] = useState(false);
-  const [txHash, setTxHash] = useState<string>("");
-  const [donatedAmount, setDonatedAmount] = useState<string>("");
-  const [totalDonated, setTotalDonated] = useState<string>("");
+  const [usdcBalance, setUsdcBalance] = useState<string>("0");
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  
+  // CCTP hook
+  const {
+    connectWallet,
+    disconnectWallet,
+    checkWalletConnection,
+    getBalance,
+    executeTransfer,
+    currentStep,
+    logs,
+    error,
+    reset,
+    connectedAddress,
+    isWalletConnected,
+    setSenderPrivateKey,
+  } = useCrossChainTransfer();
 
-  // Convert USD to FLOW when donation amount changes
+  // Load USDC balance when chain or wallet changes
   useEffect(() => {
-    const convertCurrency = async () => {
-      if (donationAmount && parseFloat(donationAmount) > 0) {
-        setIsConvertingCurrency(true);
+    const loadBalance = async () => {
+      if (selectedChain && isWalletConnected) {
+        setIsLoadingBalance(true);
         try {
-          const usdAmount = parseFloat(donationAmount);
-          const flowTokens = await convertUsdToFlow(usdAmount);
-          setFlowAmount(flowTokens);
+          const balance = await getBalance(selectedChain);
+          setUsdcBalance(balance);
         } catch (error) {
-          console.error("Currency conversion failed:", error);
-          // Use fallback rate
-          setFlowAmount(parseFloat(donationAmount) * 1);
+          console.error("Failed to load USDC balance:", error);
+          setUsdcBalance("0");
         } finally {
-          setIsConvertingCurrency(false);
+          setIsLoadingBalance(false);
         }
-      } else {
-        setFlowAmount(0);
       }
     };
 
-    const debounceTimer = setTimeout(convertCurrency, 500);
-    return () => clearTimeout(debounceTimer);
-  }, [donationAmount]);
+    loadBalance();
+  }, [selectedChain, isWalletConnected, getBalance]);
 
-  const switchToFlowTestnet = async () => {
+  // Monitor transfer progress and move to success when completed
+  useEffect(() => {
+    if (step === "transfer" && currentStep === "completed") {
+      setStep("success");
+      setConnectionStatus("USDC transfer completed successfully!");
+    }
+  }, [currentStep, step]);
+
+  const switchToChain = async (chainId: SupportedChainId) => {
     if (!window.ethereum) {
       setConnectionStatus("MetaMask not found");
       return false;
     }
 
     try {
-      setConnectionStatus("Switching to Flow Testnet...");
+      setConnectionStatus(`Switching to ${CHAIN_TO_CHAIN_NAME[chainId]}...`);
       
-      // Try to switch to Flow testnet
+      const hexChainId = `0x${chainId.toString(16)}`;
+      
+      // Try to switch to the selected chain
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: FLOW_TESTNET_CONFIG.chainId }],
+        params: [{ chainId: hexChainId }],
       });
 
-      setConnectionStatus("Connected to Flow Testnet!");
+      setConnectionStatus(`Connected to ${CHAIN_TO_CHAIN_NAME[chainId]}!`);
+      setSelectedChain(chainId);
       
       setTimeout(() => {
         setStep("amount");
         setConnectionStatus("");
-        setIsConnecting(false);
       }, 1500);
       
       return true;
     } catch (switchError: any) {
-      // Chain doesn't exist in MetaMask, add it
-      if (switchError.code === 4902) {
+      // Chain doesn't exist in MetaMask, add it (if we have RPC info)
+      if (switchError.code === 4902 && CHAIN_RPC_URLS[chainId]) {
         try {
+          const hexChainId = `0x${chainId.toString(16)}`;
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
             params: [
               {
-                chainId: FLOW_TESTNET_CONFIG.chainId,
-                chainName: FLOW_TESTNET_CONFIG.chainName,
-                nativeCurrency: FLOW_TESTNET_CONFIG.nativeCurrency,
-                rpcUrls: [FLOW_TESTNET_CONFIG.rpcUrl],
-                blockExplorerUrls: [FLOW_TESTNET_CONFIG.blockExplorer],
+                chainId: hexChainId,
+                chainName: CHAIN_TO_CHAIN_NAME[chainId],
+                rpcUrls: [CHAIN_RPC_URLS[chainId]],
+                nativeCurrency: {
+                  name: "ETH",
+                  symbol: "ETH", 
+                  decimals: 18,
+                },
               },
             ],
           });
 
-          setConnectionStatus("Added and connected to Flow Testnet!");
+          setConnectionStatus(`Added and connected to ${CHAIN_TO_CHAIN_NAME[chainId]}!`);
+          setSelectedChain(chainId);
           
           setTimeout(() => {
             setStep("amount");
             setConnectionStatus("");
-            setIsConnecting(false);
           }, 1500);
           
           return true;
         } catch (addError) {
-          console.error("Failed to add Flow testnet:", addError);
-          setConnectionStatus("Failed to add Flow Testnet network");
-          setIsConnecting(false);
+          console.error(`Failed to add ${CHAIN_TO_CHAIN_NAME[chainId]}:`, addError);
+          setConnectionStatus(`Failed to add ${CHAIN_TO_CHAIN_NAME[chainId]} network`);
           return false;
         }
       } else {
-        console.error("Failed to switch to Flow testnet:", switchError);
-        setConnectionStatus("Failed to switch to Flow Testnet");
-        setIsConnecting(false);
+        console.error(`Failed to switch to ${CHAIN_TO_CHAIN_NAME[chainId]}:`, switchError);
+        setConnectionStatus(`Failed to switch to ${CHAIN_TO_CHAIN_NAME[chainId]}`);
         return false;
       }
     }
   };
 
   const handleDonate = async () => {
-    if (!donationAmount || parseFloat(donationAmount) <= 0 || flowAmount <= 0) return;
+    if (!donationAmount || parseFloat(donationAmount) <= 0 || !selectedChain) return;
 
-    setIsConnecting(true);
-    setConnectionStatus("Preparing transaction...");
+    // Get donation agent address from env
+    const donationAgentAddress = import.meta.env.VITE_DONATION_AGENT_ADDRESS;
+    if (!donationAgentAddress) {
+      setConnectionStatus("Error: Donation agent address not configured");
+      return;
+    }
+
+    // Set the private key from user's wallet (this is handled by the CCTP hook internally)
+    // The hook will use MetaMask for transactions but needs private key for paymaster functionality
+    const privateKey = import.meta.env.VITE_EVM_PRIVATE_KEY;
+    if (privateKey) {
+      setSenderPrivateKey(privateKey);
+    }
+
+    // Move to transfer step and let the transfer progress
+    setStep("transfer");
+    setConnectionStatus("Initiating USDC transfer...");
 
     try {
-      if (!window.ethereum) {
-        throw new Error("MetaMask not found");
-      }
+      // Execute CCTP transfer - this will update currentStep and logs automatically
+      await executeTransfer(
+        selectedChain,
+        donationAmount,
+        "standard", // Use standard transfer for donations
+        donationAgentAddress
+      );
 
-      // Ensure disaster hash has 0x prefix
-      let formattedDisasterHash = disasterHash;
-      if (!disasterHash.startsWith('0x')) {
-        formattedDisasterHash = '0x' + disasterHash;
-      }
-
-      // Create ethers provider and signer
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      // Verify we're on the correct network
-      const network = await provider.getNetwork();
-
-      if (network.chainId !== 545n) {
-        throw new Error(`Wrong network. Expected Flow Testnet (545), got ${network.chainId}`);
-      }
-
-      // Create contract instance
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      setConnectionStatus("Please confirm the transaction in MetaMask...");
-
-      // Convert FLOW amount to wei using parseEther
-      const donationAmountWei = ethers.parseEther(flowAmount.toString());
-
-      // Verify disaster exists before donating
-      try {
-        const disasterDetails = await contract.getDisasterDetails(formattedDisasterHash);
-
-        if (!disasterDetails[6]) {
-          throw new Error('Disaster is not active');
-        }
-      } catch (verifyError) {
-        throw new Error('Invalid disaster hash or disaster not found');
-      }
-
-      // Call the contract function
-      const tx = await contract.donateToDisaster(formattedDisasterHash, {
-        value: donationAmountWei
-      });
-
-      setConnectionStatus("Transaction submitted! Waiting for confirmation...");
-      setTxHash(tx.hash);
-
-      // Wait for transaction receipt
-      const receipt = await tx.wait();
-
-      setConnectionStatus("Transaction confirmed! Processing events...");
-
-      // Check if DonationMade event was emitted
-      const event = receipt.logs.find((log: any) => {
-        try {
-          const parsed = contract.interface.parseLog(log);
-          return parsed?.name === 'DonationMade';
-        } catch {
-          return false;
-        }
-      });
-
-      if (event) {
-        try {
-          const parsed = contract.interface.parseLog(event);
-          if (parsed && parsed.args) {
-            const donatedAmountFormatted = ethers.formatEther(parsed.args.amount);
-            const totalDonatedFormatted = ethers.formatEther(parsed.args.totalDonated);
-            
-            setDonatedAmount(donatedAmountFormatted);
-            setTotalDonated(totalDonatedFormatted);
-          }
-        } catch (error) {
-          console.error("Error parsing event:", error);
-        }
-      }
-
-      setConnectionStatus("Donation successful!");
-      setStep("success");
-      setIsConnecting(false);
-
+      // Only move to success when transfer is actually completed
       if (refreshDonations) {
         await refreshDonations();
       }
 
     } catch (error: any) {
       console.error("Donation error:", error);
-      
-      // More detailed error handling
-      let errorMessage = "Transaction failed";
-      
-      if (error.code === 'CALL_EXCEPTION') {
-        errorMessage = "Transaction failed - please check disaster hash and try again";
-      } else if (error.code === 'INSUFFICIENT_FUNDS') {
-        errorMessage = "Insufficient FLOW balance";
-      } else if (error.code === 'USER_REJECTED') {
-        errorMessage = "Transaction cancelled by user";
-      } else if (error.code === 'NETWORK_ERROR') {
-        errorMessage = "Network error - please check your connection to Flow testnet";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      setConnectionStatus(`Error: ${errorMessage}`);
-      setIsConnecting(false);
+      setConnectionStatus(`Error: ${error.message || "Transfer failed"}`);
+      // Stay on transfer step to show error, don't go back to amount
     }
   };
 
-  const connectMetamask = async () => {
-    setIsConnecting(true);
+  const handleChainSelect = async (chainId: SupportedChainId) => {
     setConnectionStatus("Connecting to MetaMask...");
 
     try {
-      if (!window.ethereum) {
-        setConnectionStatus(
-          "MetaMask not found. Please install MetaMask extension."
-        );
-        setIsConnecting(false);
-        return;
-      }
-
-      const accounts = (await window.ethereum.request({
-        method: "eth_requestAccounts",
-      })) as string[];
-
-      if (accounts.length === 0) {
-        setConnectionStatus("No accounts found. Please unlock MetaMask.");
-        setIsConnecting(false);
-        return;
-      }
-
-      setConnectedAccount(accounts[0]);
-      setConnectionStatus("Connected! Switching to Flow Testnet...");
-
-      // Automatically switch to Flow testnet after connecting
-      await switchToFlowTestnet();
+      // Connect wallet first
+      await connectWallet();
+      
+      // Then switch to selected chain
+      await switchToChain(chainId);
     } catch (error: unknown) {
-      console.error("MetaMask connection error:", error);
+      console.error("Connection error:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Connection failed";
       setConnectionStatus(`Error: ${errorMessage}`);
-      setIsConnecting(false);
     }
   };
 
   const handleBack = () => {
     if (step === "amount") {
-      setStep("wallet");
+      setStep("chain");
+    } else if (step === "transfer") {
+      setStep("amount");
     } else if (step === "success") {
       setStep("amount");
     }
     setConnectionStatus("");
-    setIsConnecting(false);
-    if (step === "wallet") {
-      setConnectedAccount("");
-    }
   };
 
   const handleNewDonation = () => {
     setStep("amount");
     setDonationAmount("");
-    setFlowAmount(0);
-    setTxHash("");
-    setDonatedAmount("");
-    setTotalDonated("");
     setConnectionStatus("");
+    reset(); // Reset CCTP hook state
   };
 
   const resetModal = () => {
-    setStep("wallet");
+    setStep("chain");
     setDonationAmount("");
-    setFlowAmount(0);
     setConnectionStatus("");
-    setIsConnecting(false);
-    setConnectedAccount("");
-    setIsConvertingCurrency(false);
-    setTxHash("");
-    setDonatedAmount("");
-    setTotalDonated("");
+    setSelectedChain(null);
+    setUsdcBalance("0");
+    setIsLoadingBalance(false);
+    reset(); // Reset CCTP hook state
   };
 
   useEffect(() => {
@@ -384,7 +300,7 @@ export default function DonationModal({
                 </button>
 
                 {/* Back Button */}
-                {(step === "amount" || step === "success") && (
+                {(step === "amount" || step === "transfer" || step === "success") && (
                   <button
                     onClick={handleBack}
                     className="absolute top-4 left-4 text-amber-900 hover:text-black transition-colors"
@@ -405,18 +321,18 @@ export default function DonationModal({
                   </button>
                 )}
 
-                {/* Step 1: Wallet Selection */}
-                {step === "wallet" && (
+                {/* Step 1: Chain Selection */}
+                {step === "chain" && (
                   <>
                     <div className="text-center mb-8">
                       <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
-                        Connect Your Wallet
+                        Select Chain for USDC Donation
                       </h2>
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
                         For: {eventTitle}
                       </div>
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs">
-                        Flow Testnet Network
+                        Choose your preferred blockchain network
                       </div>
                     </div>
 
@@ -428,24 +344,20 @@ export default function DonationModal({
                       </div>
                     )}
 
-                    <div className="space-y-4">
-                      <div className="space-y-2">
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {SUPPORTED_CHAINS.map((chainId) => (
                         <button
-                          onClick={connectMetamask}
-                          disabled={isConnecting}
-                          className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 disabled:border-gray-400/30 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel'] flex items-center justify-center"
+                          key={chainId}
+                          onClick={() => handleChainSelect(chainId)}
+                          className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-gray-900 font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-['Cinzel'] text-left flex items-center justify-between"
                         >
-                          <img
-                            src="/MetaMask.png"
-                            alt="MetaMask"
-                            className="w-6 h-6 mr-3"
-                          />
-                          {isConnecting ? "Connecting..." : "Connect MetaMask"}
+                          <div>
+                            <div className="text-sm font-bold">{CHAIN_TO_CHAIN_NAME[chainId]}</div>
+                            <div className="text-xs text-gray-700">USDC Available</div>
+                          </div>
+                          <div className="text-xs text-gray-600">→</div>
                         </button>
-                        <p className="text-gray-700 font-['Cinzel'] text-xs text-center italic px-2">
-                          Connect to Flow Testnet for donations
-                        </p>
-                      </div>
+                      ))}
                     </div>
                   </>
                 )}
@@ -455,10 +367,10 @@ export default function DonationModal({
                   <>
                     <div className="text-center mb-8">
                       <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
-                        Enter Donation Amount
+                        Enter USDC Amount
                       </h2>
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-sm">
-                        Connected: <span className="font-bold">Flow Testnet</span>
+                        Connected: <span className="font-bold">{selectedChain ? CHAIN_TO_CHAIN_NAME[selectedChain] : ""}</span>
                       </div>
                       <div className="mt-1 text-gray-800 font-['Cinzel'] text-xs italic">
                         For: {eventTitle}
@@ -473,42 +385,83 @@ export default function DonationModal({
                       </div>
                     )}
 
+                    {/* USDC Balance Display OR Transfer Logs */}
+                    {currentStep === "idle" ? (
+                      <div className="mb-4 p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                        <div className="text-center">
+                          <p className="text-gray-800 font-['Cinzel'] text-sm">
+                            Your USDC Balance:
+                          </p>
+                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
+                            {isLoadingBalance ? (
+                              <span className="animate-pulse">Loading...</span>
+                            ) : (
+                              `${parseFloat(usdcBalance).toFixed(6)} USDC`
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-4 p-3 bg-blue-100/30 rounded-lg border border-blue-200/50">
+                        <div className="mb-2">
+                          <p className="text-blue-800 font-['Cinzel'] text-sm font-bold">
+                            Transfer Progress:
+                          </p>
+                          <p className="text-blue-900 font-['Cinzel'] text-xs capitalize">
+                            {currentStep.replace('-', ' ')}
+                          </p>
+                        </div>
+                        <div className="max-h-24 overflow-y-auto space-y-1">
+                          {logs.length === 0 ? (
+                            <div className="text-xs text-blue-700 font-['Cinzel'] italic">
+                              Initializing transfer...
+                            </div>
+                          ) : (
+                            logs.slice(-4).map((log, index) => (
+                              <div key={index} className="text-xs text-blue-700 font-['Cinzel'] leading-tight">
+                                {log.replace(/^\[\d{1,2}:\d{2}:\d{2}\s*[AP]M\]\s*/, '')}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        {error && (
+                          <div className="mt-2 p-2 bg-red-200/50 rounded border border-red-300/50">
+                            <p className="text-red-800 font-['Cinzel'] text-xs">
+                              ❌ {error}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="mb-6">
                       <label className="block text-gray-900 font-['Cinzel'] font-bold mb-3 text-lg">
-                        Amount (USD)
+                        Amount (USDC)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-700 font-['Cinzel'] text-xl font-bold">
-                          $
-                        </span>
                         <input
                           type="number"
                           value={donationAmount}
                           onChange={(e) => setDonationAmount(e.target.value)}
-                          placeholder="0.00"
+                          placeholder="0.000000"
                           min="0"
-                          step="0.01"
-                          className="w-full pl-8 pr-4 py-4 bg-white/20 backdrop-blur-sm border-2 border-amber-600/50 rounded-xl text-gray-900 font-['Cinzel'] text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-amber-700 focus:bg-white/30 transition-all"
+                          step="0.000001"
+                          max={usdcBalance}
+                          className="w-full pl-4 pr-16 py-4 bg-white/20 backdrop-blur-sm border-2 border-amber-600/50 rounded-xl text-gray-900 font-['Cinzel'] text-xl font-bold placeholder-gray-600 focus:outline-none focus:border-amber-700 focus:bg-white/30 transition-all"
                         />
+                        <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-700 font-['Cinzel'] text-sm font-bold">
+                          USDC
+                        </span>
                       </div>
-                      
-                      {/* Flow Amount Display */}
-                      {donationAmount && parseFloat(donationAmount) > 0 && (
-                        <div className="mt-3 p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
-                          <div className="text-center">
-                            <p className="text-gray-800 font-['Cinzel'] text-sm">
-                              Equivalent in FLOW:
-                            </p>
-                            <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
-                              {isConvertingCurrency ? (
-                                <span className="animate-pulse">Converting...</span>
-                              ) : (
-                                formatFlowAmount(flowAmount)
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                      <div className="mt-2 flex justify-between text-xs text-gray-700">
+                        <span>Min: 0.1 USDC</span>
+                        <button
+                          onClick={() => setDonationAmount(usdcBalance)}
+                          className="text-amber-800 hover:text-amber-900 font-bold"
+                        >
+                          Use Max
+                        </button>
+                      </div>
                     </div>
 
                     <button
@@ -516,20 +469,127 @@ export default function DonationModal({
                       disabled={
                         !donationAmount ||
                         parseFloat(donationAmount) <= 0 ||
-                        flowAmount <= 0 ||
-                        isConnecting ||
-                        isConvertingCurrency
+                        parseFloat(donationAmount) > parseFloat(usdcBalance) ||
+                        parseFloat(donationAmount) < 0.1
                       }
                       className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 disabled:border-gray-400/30 disabled:text-gray-500 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel']"
                     >
-                      {isConnecting ? "Processing..." : 
-                       isConvertingCurrency ? "Converting..." : 
-                       "Donate Now"}
+                      Donate USDC
                     </button>
                   </>
                 )}
 
-                {/* Step 3: Success Screen */}
+                {/* Step 3: Transfer Progress */}
+                {step === "transfer" && (
+                  <>
+                    <div className="text-center mb-6">
+                      <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
+                        Processing USDC Transfer
+                      </h2>
+                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
+                        Cross-chain transfer to Ethereum Sepolia in progress
+                      </div>
+                    </div>
+
+                    {/* Progress Steps Indicator */}
+                    <div className="mb-6 p-4 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs font-['Cinzel']">
+                          <div className={`flex items-center space-x-2 ${currentStep === "idle" || currentStep === "approving" || currentStep === "burning" || currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed" ? "text-green-700" : "text-gray-500"}`}>
+                            <div className={`w-3 h-3 rounded-full ${currentStep === "approving" ? "bg-yellow-500 animate-pulse" : (currentStep === "idle" || currentStep === "burning" || currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed") ? "bg-green-500" : "bg-gray-300"}`}></div>
+                            <span>1. Approve USDC</span>
+                          </div>
+                          {(currentStep === "burning" || currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed") && <span className="text-green-600">✓</span>}
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs font-['Cinzel']">
+                          <div className={`flex items-center space-x-2 ${currentStep === "burning" || currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed" ? "text-green-700" : "text-gray-500"}`}>
+                            <div className={`w-3 h-3 rounded-full ${currentStep === "burning" ? "bg-yellow-500 animate-pulse" : (currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed") ? "bg-green-500" : "bg-gray-300"}`}></div>
+                            <span>2. Burn USDC on {selectedChain ? CHAIN_TO_CHAIN_NAME[selectedChain] : "Source"}</span>
+                          </div>
+                          {(currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed") && <span className="text-green-600">✓</span>}
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs font-['Cinzel']">
+                          <div className={`flex items-center space-x-2 ${currentStep === "waiting-attestation" || currentStep === "minting" || currentStep === "completed" ? "text-green-700" : "text-gray-500"}`}>
+                            <div className={`w-3 h-3 rounded-full ${currentStep === "waiting-attestation" ? "bg-yellow-500 animate-pulse" : (currentStep === "minting" || currentStep === "completed") ? "bg-green-500" : "bg-gray-300"}`}></div>
+                            <span>3. Wait for Attestation</span>
+                          </div>
+                          {(currentStep === "minting" || currentStep === "completed") && <span className="text-green-600">✓</span>}
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-xs font-['Cinzel']">
+                          <div className={`flex items-center space-x-2 ${currentStep === "minting" || currentStep === "completed" ? "text-green-700" : "text-gray-500"}`}>
+                            <div className={`w-3 h-3 rounded-full ${currentStep === "minting" ? "bg-yellow-500 animate-pulse" : currentStep === "completed" ? "bg-green-500" : "bg-gray-300"}`}></div>
+                            <span>4. Mint USDC on Ethereum Sepolia</span>
+                          </div>
+                          {currentStep === "completed" && <span className="text-green-600">✓</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Current Status */}
+                    <div className="mb-4 p-3 bg-blue-100/30 rounded-lg border border-blue-200/50">
+                      <div className="text-center">
+                        <p className="text-blue-800 font-['Cinzel'] text-sm font-bold">
+                          Current Status:
+                        </p>
+                        <p className="text-blue-900 font-['Cinzel'] text-sm capitalize">
+                          {currentStep === "idle" ? "Initializing..." : 
+                           currentStep === "approving" ? "Approving USDC for transfer..." :
+                           currentStep === "burning" ? "Burning USDC on source chain..." :
+                           currentStep === "waiting-attestation" ? "Waiting for Circle attestation..." :
+                           currentStep === "minting" ? "Minting USDC on destination..." :
+                           currentStep === "completed" ? "Transfer completed successfully!" :
+                           currentStep === "error" ? "Transfer failed" :
+                           currentStep.replace('-', ' ')}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Transfer Logs */}
+                    <div className="mb-6 max-h-32 overflow-y-auto space-y-1 p-3 bg-gray-100/30 rounded-lg border border-gray-200/50">
+                      <p className="text-gray-700 font-['Cinzel'] text-xs font-bold mb-2">Transaction Log:</p>
+                      {logs.length === 0 ? (
+                        <div className="text-xs text-gray-600 font-['Cinzel'] italic">
+                          Initializing transfer...
+                        </div>
+                      ) : (
+                        logs.slice(-8).map((log, index) => (
+                          <div key={index} className="text-xs text-gray-700 font-['Cinzel'] leading-tight">
+                            {log.replace(/^\[\d{1,2}:\d{2}:\d{2}\s*[AP]M\]\s*/, '')}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Error Display */}
+                    {error && (
+                      <div className="mb-6 p-3 bg-red-200/70 rounded-lg border border-red-600/50">
+                        <p className="text-red-900 font-['Cinzel'] text-sm text-center font-medium">
+                          ❌ Error: {error}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Warning/Info */}
+                    <div className="text-center">
+                      <div className="text-gray-700 font-['Cinzel'] text-xs">
+                        {currentStep === "waiting-attestation" ? (
+                          <span className="animate-pulse">⏳ Waiting for Circle's attestation service... This usually takes 1-2 minutes</span>
+                        ) : currentStep === "minting" ? (
+                          <span className="animate-pulse">⚡ Minting USDC on destination chain...</span>
+                        ) : currentStep === "completed" ? (
+                          <span className="text-green-700">✅ Transfer completed successfully!</span>
+                        ) : (
+                          <span className="animate-pulse">Processing transaction... Please wait</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Step 4: Success Screen */}
                 {step === "success" && (
                   <>
                     <div className="text-center mb-8">
@@ -551,53 +611,52 @@ export default function DonationModal({
                         </div>
                       </div>
                       <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
-                        Donation Successful!
+                        USDC Donation Successful!
                       </h2>
                       <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
-                        Thank you for your generosity
+                        Your USDC has been transferred to Ethereum Sepolia
                       </div>
                     </div>
 
                     <div className="space-y-4 mb-6">
-                      {/* Transaction Hash */}
+                      {/* Transfer Details */}
                       <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
                         <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
-                          Transaction Hash:
+                          Transfer Details:
                         </p>
-                        <p className="text-gray-900 font-['Cinzel'] text-xs font-mono break-all">
-                          {txHash}
-                        </p>
-                        <a
-                          href={`https://evm-testnet.flowscan.io/tx/${txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-amber-800 hover:text-amber-900 font-['Cinzel'] text-xs underline mt-1 inline-block"
-                        >
-                          View on Explorer →
-                        </a>
+                        <div className="space-y-1 text-xs text-gray-900 font-['Cinzel']">
+                          <div>Amount: <span className="font-bold">{donationAmount} USDC</span></div>
+                          <div>From: <span className="font-bold">{selectedChain ? CHAIN_TO_CHAIN_NAME[selectedChain] : ""}</span></div>
+                          <div>To: <span className="font-bold">Ethereum Sepolia</span></div>
+                          <div>Recipient: <span className="font-bold">Donation Agent</span></div>
+                        </div>
                       </div>
 
-                      {/* Donation Details */}
-                      {donatedAmount && (
-                        <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
-                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
-                            Your Donation:
+                      {/* Status */}
+                      {currentStep === "completed" && (
+                        <div className="p-3 bg-green-100/30 rounded-lg border border-green-200/50">
+                          <p className="text-green-800 font-['Cinzel'] text-sm font-bold mb-1">
+                            Transfer Status:
                           </p>
-                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
-                            {parseFloat(donatedAmount).toFixed(6)} FLOW
+                          <p className="text-green-900 font-['Cinzel'] text-sm">
+                            ✅ Successfully transferred via Circle's CCTP
                           </p>
                         </div>
                       )}
 
-                      {/* Total Donated */}
-                      {totalDonated && (
+                      {/* Recent Logs */}
+                      {logs.length > 0 && (
                         <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
-                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-1">
-                            Total Raised:
+                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-2">
+                            Transaction Log:
                           </p>
-                          <p className="text-gray-900 font-['Cinzel'] text-lg font-bold">
-                            {parseFloat(totalDonated).toFixed(6)} FLOW
-                          </p>
+                          <div className="max-h-20 overflow-y-auto space-y-1">
+                            {logs.slice(-3).map((log, index) => (
+                              <div key={index} className="text-xs text-gray-700 font-['Cinzel']">
+                                {log}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
