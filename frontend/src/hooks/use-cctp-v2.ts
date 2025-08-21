@@ -192,6 +192,13 @@ const chains = {
 };
 
 
+export interface TransactionHashes {
+  approvalTx?: string;
+  burnTx?: string;
+  mintTx?: string;
+  attestationHash?: string;
+}
+
 export function useCrossChainTransfer() {
   const [currentStep, setCurrentStep] = useState<TransferStep>("idle");
   const [logs, setLogs] = useState<string[]>([]);
@@ -201,6 +208,7 @@ export function useCrossChainTransfer() {
   const [senderPrivateKey, setSenderPrivateKey] = useState<string>(
     import.meta.env.VITE_EVM_PRIVATE_KEY || import.meta.env.VITE_PRIVATE_KEY || ""
   );
+  const [transactionHashes, setTransactionHashes] = useState<TransactionHashes>({});
 
   const DEFAULT_DECIMALS = 6;
 
@@ -515,15 +523,20 @@ export function useCrossChainTransfer() {
       
       // Wait for inclusion
       const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: uoHash });
-      addLog(`USDC approval transaction hash: ${receipt.receipt.transactionHash}`);
+      const approvalTxHash = receipt.receipt.transactionHash;
+      
+      // Store the approval transaction hash
+      setTransactionHashes(prev => ({ ...prev, approvalTx: approvalTxHash }));
+      
+      addLog(`✅ USDC approval confirmed: ${approvalTxHash}`);
       
       if (receipt.success) {
-        addLog("USDC approval confirmed successfully!");
+        addLog("USDC approval completed successfully!");
       } else {
         throw new Error("USDC approval failed");
       }
       
-      return receipt.receipt.transactionHash;
+      return approvalTxHash;
     } catch (err) {
       setError("Approval failed");
       throw err;
@@ -647,9 +660,15 @@ export function useCrossChainTransfer() {
       
       // Wait for inclusion
       const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: uoHash });
-      addLog(`Burn transaction hash: ${receipt.receipt.transactionHash}`);
+      const burnTxHash = receipt.receipt.transactionHash;
       
-      return receipt.receipt.transactionHash;
+      // Store the burn transaction hash
+      setTransactionHashes(prev => ({ ...prev, burnTx: burnTxHash }));
+      
+      addLog(`🔥 USDC burn confirmed: ${burnTxHash}`);
+      addLog("USDC successfully burned on source chain!");
+      
+      return burnTxHash;
     } catch (err) {
       setError("Burn failed");
       throw err;
@@ -680,8 +699,13 @@ export function useCrossChainTransfer() {
         addLog(`Response data: ${JSON.stringify(response.data, null, 2)}`);
         
         if (response.data?.messages?.[0]?.status === "complete") {
-          addLog("Attestation retrieved successfully!");
-          return response.data.messages[0];
+          const message = response.data.messages[0];
+          // Store the attestation hash
+          setTransactionHashes(prev => ({ ...prev, attestationHash: message.attestation }));
+          
+          addLog("📋 Attestation retrieved successfully!");
+          addLog(`Attestation hash: ${message.attestation.substring(0, 20)}...`);
+          return message;
         } else if (response.data?.messages?.[0]?.status) {
           addLog(`Current status: ${response.data.messages[0].status}`);
         } else {
@@ -784,11 +808,16 @@ export function useCrossChainTransfer() {
         
         // Wait for inclusion
         const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: uoHash });
-        addLog(`Mint transaction hash: ${receipt.receipt.transactionHash}`);
+        const mintTxHash = receipt.receipt.transactionHash;
+        
+        // Store the mint transaction hash
+        setTransactionHashes(prev => ({ ...prev, mintTx: mintTxHash }));
+        
+        addLog(`✨ USDC mint confirmed: ${mintTxHash}`);
         
         if (receipt.success) {
           setCurrentStep("completed");
-          addLog("USDC mint completed successfully! (Gas paid by gas payer account)");
+          addLog("🎉 Cross-chain transfer completed successfully!");
         } else {
           throw new Error("USDC mint failed");
         }
@@ -911,6 +940,7 @@ export function useCrossChainTransfer() {
     setCurrentStep("idle");
     setLogs([]);
     setError(null);
+    setTransactionHashes({});
   };
 
   return {
@@ -927,5 +957,6 @@ export function useCrossChainTransfer() {
     isWalletConnected,
     senderPrivateKey,
     setSenderPrivateKey,
+    transactionHashes,
   };
 }

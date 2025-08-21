@@ -51,6 +51,7 @@ export default function DonationModal({
     connectedAddress,
     isWalletConnected,
     setSenderPrivateKey,
+    transactionHashes,
   } = useCrossChainTransfer();
 
   // Load USDC balance when chain or wallet changes
@@ -508,17 +509,62 @@ export default function DonationModal({
                         </p>
                       </div>
                     </div>
+{/* 
+                    Key Transaction Hashes
+                    {(transactionHashes.approvalTx || transactionHashes.burnTx || transactionHashes.mintTx || transactionHashes.attestationHash) && (
+                      <div className="mb-4 p-3 bg-green-100/30 rounded-lg border border-green-200/50">
+                        <p className="text-green-800 font-['Cinzel'] text-sm font-bold mb-3">Key Transaction Events:</p>
+                        <div className="space-y-2">
+                          {transactionHashes.approvalTx && (
+                            <div className="flex items-start space-x-2">
+                              <span className="text-green-600 text-sm">✅</span>
+                              <div className="flex-1">
+                                <p className="text-green-800 font-['Cinzel'] text-sm font-semibold">Approval Transaction</p>
+                                <p className="text-green-700 font-mono text-xs break-all">{transactionHashes.approvalTx}</p>
+                              </div>
+                            </div>
+                          )}
+                          {transactionHashes.burnTx && (
+                            <div className="flex items-start space-x-2">
+                              <span className="text-green-600 text-sm">🔥</span>
+                              <div className="flex-1">
+                                <p className="text-green-800 font-['Cinzel'] text-sm font-semibold">Burn Transaction</p>
+                                <p className="text-green-700 font-mono text-xs break-all">{transactionHashes.burnTx}</p>
+                              </div>
+                            </div>
+                          )}
+                          {transactionHashes.attestationHash && (
+                            <div className="flex items-start space-x-2">
+                              <span className="text-green-600 text-sm">📋</span>
+                              <div className="flex-1">
+                                <p className="text-green-800 font-['Cinzel'] text-sm font-semibold">Circle Attestation</p>
+                                <p className="text-green-700 font-mono text-xs break-all">{transactionHashes.attestationHash.substring(0, 40)}...</p>
+                              </div>
+                            </div>
+                          )}
+                          {transactionHashes.mintTx && (
+                            <div className="flex items-start space-x-2">
+                              <span className="text-green-600 text-sm">✨</span>
+                              <div className="flex-1">
+                                <p className="text-green-800 font-['Cinzel'] text-sm font-semibold">Mint Transaction</p>
+                                <p className="text-green-700 font-mono text-xs break-all">{transactionHashes.mintTx}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )} */}
 
                     {/* Transfer Logs */}
-                    <div className="mb-6 max-h-32 overflow-y-auto space-y-1 p-3 bg-gray-100/30 rounded-lg border border-gray-200/50">
-                      <p className="text-gray-700 font-['Cinzel'] text-xs font-bold mb-2">Transaction Log:</p>
+                    <div className="mb-6 max-h-32 overflow-y-auto space-y-2 p-3 bg-gray-100/30 rounded-lg border border-gray-200/50">
+                      <p className="text-gray-700 font-['Cinzel'] text-sm font-bold mb-2">Transaction Log:</p>
                       {logs.length === 0 ? (
-                        <div className="text-xs text-gray-600 font-['Cinzel'] italic">
+                        <div className="text-sm text-gray-600 font-mono italic">
                           Initializing transfer...
                         </div>
                       ) : (
-                        logs.slice(-8).map((log, index) => (
-                          <div key={index} className="text-xs text-gray-700 font-['Cinzel'] leading-tight">
+                        logs.slice(-6).map((log, index) => (
+                          <div key={index} className="text-sm text-gray-700 font-mono leading-relaxed">
                             {log.replace(/^\[\d{1,2}:\d{2}:\d{2}\s*[AP]M\]\s*/, '')}
                           </div>
                         ))
@@ -606,21 +652,32 @@ export default function DonationModal({
                         </div>
                       )}
 
-                      {/* Recent Logs */}
-                      {logs.length > 0 && (
-                        <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
-                          <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-2">
-                            Transaction Log:
-                          </p>
-                          <div className="max-h-20 overflow-y-auto space-y-1">
-                            {logs.slice(-3).map((log, index) => (
-                              <div key={index} className="text-xs text-gray-700 font-['Cinzel']">
-                                {log}
-                              </div>
-                            ))}
-                          </div>
+                      {/* Transaction Hashes Summary */}
+                      <div className="p-3 bg-amber-100/30 rounded-lg border border-amber-200/50">
+                        <p className="text-gray-800 font-['Cinzel'] text-sm font-bold mb-3">
+                          Transaction Summary:
+                        </p>
+                        <div className="space-y-2">
+                          {transactionHashes.approvalTx && (
+                            <div>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">✅ Approval Tx:</p>
+                              <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.approvalTx}</p>
+                            </div>
+                          )}
+                          {transactionHashes.burnTx && (
+                            <div>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">🔥 Burn Tx:</p>
+                              <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.burnTx}</p>
+                            </div>
+                          )}
+                          {transactionHashes.mintTx && (
+                            <div>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">✨ Mint Tx:</p>
+                              <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.mintTx}</p>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     <div className="space-y-3">
