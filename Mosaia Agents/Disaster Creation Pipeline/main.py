@@ -15,17 +15,14 @@ import time
 # Load environment variables
 load_dotenv()
 
-# CoinMarketCap API Key
-CMC_API_KEY = os.getenv("X_CMC_PRO_API_KEY")
+# Ethereum Sepolia/Contract config from .env
+ETH_RPC_URL = os.getenv("ETH_RPC_URL")
+ETH_CHAIN_ID = int(os.getenv("ETH_CHAIN_ID", "11155111"))  # Sepolia chain ID
+ETH_CONTRACT_ADDRESS = "0x07f9BFEb19F1ac572f6D69271261dDA1fD378D9A"  # New contract address
+ETH_ACCOUNT_ADDRESS = os.getenv("ETH_ACCOUNT_ADDRESS")
+ETH_PRIVATE_KEY = os.getenv("ETH_PRIVATE_KEY")
 
-# Flow EVM/Contract config from .env
-FLOW_RPC_URL = os.getenv("FLOW_RPC_URL")
-FLOW_CHAIN_ID = int(os.getenv("FLOW_CHAIN_ID", "545"))
-FLOW_CONTRACT_ADDRESS = os.getenv("FLOW_CONTRACT_ADDRESS")
-FLOW_ACCOUNT_ADDRESS = os.getenv("FLOW_ACCOUNT_ADDRESS")
-FLOW_PRIVATE_KEY = os.getenv("FLOW_PRIVATE_KEY")
-
-# Contract ABI (from call.py, only needed functions)
+# Contract ABI for the new godslite contract
 CONTRACT_ABI = [
     {
         "inputs": [
@@ -118,48 +115,26 @@ def run_disaster_flow():
     analysis_output = analysis_response.choices[0].message.content.strip()
     print("\nAnalysis:\n", analysis_output)
 
-    # Step 5: Parse amount
+    # Step 5: Parse amount (keep USD amount as is)
     amount_match = re.search(r"AMOUNT:\s*[\$]?(?P<amount>[\d,]+)", analysis_output)
     amount_required = amount_match.group("amount").replace(",", "") if amount_match else "Unknown"
 
-    # Step 5.1: Convert USD to FLOW
-    flow_price = None
-    flow_amount = None
+    print(f"\nAmount required in USD: ${amount_required}")
+
+    # Step 5.1: Write to Smart Contract and get disaster hash
+    contract_disaster_hash = None
     if amount_required != "Unknown":
         try:
-            cmc_url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol=FLOW&convert=USD"
-            headers = {"X-CMC_PRO_API_KEY": CMC_API_KEY}
-            resp = requests.get(cmc_url, headers=headers)
-            resp.raise_for_status()
-            data = resp.json()
-            # Find the FLOW token with a valid price (not FLOW on Solana, etc.)
-            flow_tokens = data["data"]["FLOW"]
-            flow_token = next((t for t in flow_tokens if t["quote"]["USD"]["price"]), None)
-            flow_price = float(flow_token["quote"]["USD"]["price"])
-            flow_amount = float(amount_required) / flow_price
-            print(f"\nAmount required in USD: ${amount_required}")
-            print(f"Current FLOW price (USD): ${flow_price}")
-            print(f"Amount required in FLOW: {flow_amount:.6f}")
-        except Exception as e:
-            print(f"[ERROR] Could not fetch FLOW price or convert: {e}")
-            flow_amount = None
-    else:
-        print("[WARN] Amount required is unknown, skipping FLOW conversion.")
-
-    # Step 5.2: Write to Smart Contract and get disaster hash
-    contract_disaster_hash = None
-    if flow_amount is not None:
-        try:
-            web3 = Web3(Web3.HTTPProvider(FLOW_RPC_URL))
+            web3 = Web3(Web3.HTTPProvider(ETH_RPC_URL))
             if not web3.is_connected():
                 raise Exception("Web3 connection failed")
-            account = Account.from_key(FLOW_PRIVATE_KEY)
-            if account.address.lower() != FLOW_ACCOUNT_ADDRESS.lower():
+            account = Account.from_key(ETH_PRIVATE_KEY)
+            if account.address.lower() != ETH_ACCOUNT_ADDRESS.lower():
                 raise Exception("Private key does not match account address")
-            contract = web3.eth.contract(address=Web3.to_checksum_address(FLOW_CONTRACT_ADDRESS), abi=CONTRACT_ABI)
+            contract = web3.eth.contract(address=Web3.to_checksum_address(ETH_CONTRACT_ADDRESS), abi=CONTRACT_ABI)
             nonce = web3.eth.get_transaction_count(account.address)
-            # Convert FLOW to wei (1 FLOW = 1e18)
-            target_amount_wei = int(flow_amount * 1e18)
+            # Convert USD amount to wei (assuming 1 USD = 1e18 wei for simplicity, adjust as needed)
+            target_amount_wei = int(float(amount_required) * 1e18)
             tx = contract.functions.createDisaster(
                 title,
                 description,
@@ -168,10 +143,10 @@ def run_disaster_flow():
                 'from': account.address,
                 'nonce': nonce,
                 'gas': 500000,
-                'gasPrice': web3.to_wei('1', 'gwei'),
-                'chainId': FLOW_CHAIN_ID
+                'gasPrice': web3.to_wei('20', 'gwei'),  # Adjusted for Sepolia
+                'chainId': ETH_CHAIN_ID
             })
-            signed_tx = web3.eth.account.sign_transaction(tx, FLOW_PRIVATE_KEY)
+            signed_tx = web3.eth.account.sign_transaction(tx, ETH_PRIVATE_KEY)
             tx_hash = web3.eth.send_raw_transaction(signed_tx.raw_transaction)
             print(f"\n[Blockchain] Sent createDisaster tx: {tx_hash.hex()}")
             receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -242,7 +217,6 @@ def run_disaster_flow():
     print("Read More:", read_more)
     print("Location:", location)
     print("Amount Required:", amount_required)
-    print("Amount Required (FLOW):", f"{flow_amount:.6f}" if flow_amount else "N/A")
     print("Hash:", final_disaster_hash)
     print("ID:", unique_id)
     print("Created At:", created_at)
@@ -255,7 +229,6 @@ def run_disaster_flow():
         "source": read_more,
         "disaster_location": location,
         "estimated_amount_required": amount_required,
-        "estimated_amount_required_flow": f"{flow_amount:.6f}" if flow_amount else "N/A",
         "disaster_hash": final_disaster_hash,
         "created_at": created_at
     }
