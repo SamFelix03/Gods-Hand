@@ -307,6 +307,44 @@ export default function DonationModal({
     reset(); // Reset CCTP hook state
   };
 
+  // Helper function to get chain logo path
+  const getChainLogo = (chainId: SupportedChainId): string => {
+    switch (chainId) {
+      case SupportedChainId.ETH_SEPOLIA: return "/chain-logo/ethereum.png";
+      case SupportedChainId.AVAX_FUJI: return "/chain-logo/avalanche.png";
+      case SupportedChainId.BASE_SEPOLIA: return "/chain-logo/base.png";
+      case SupportedChainId.SONIC_BLAZE: return "/chain-logo/sonic.png";
+      case SupportedChainId.LINEA_SEPOLIA: return "/chain-logo/linea.png";
+      case SupportedChainId.ARBITRUM_SEPOLIA: return "/chain-logo/arbitrum.png";
+      case SupportedChainId.WORLDCHAIN_SEPOLIA: return "/chain-logo/worldchain.png";
+      case SupportedChainId.OPTIMISM_SEPOLIA: return "/chain-logo/optimism.png";
+      case SupportedChainId.CODEX_TESTNET: return "/chain-logo/codex.png";
+      case SupportedChainId.UNICHAIN_SEPOLIA: return "/chain-logo/unichain.png";
+      case SupportedChainId.POLYGON_AMOY: return "/chain-logo/polygon.png";
+      case SupportedChainId.SEI_TESTNET: return "/chain-logo/sei.png";
+      default: return "/chain-logo/ethereum.png"; // fallback
+    }
+  };
+
+  // Helper function to get short chain name for display
+  const getShortChainName = (chainId: SupportedChainId): string => {
+    switch (chainId) {
+      case SupportedChainId.ETH_SEPOLIA: return "Ethereum";
+      case SupportedChainId.AVAX_FUJI: return "Avalanche";
+      case SupportedChainId.BASE_SEPOLIA: return "Base";
+      case SupportedChainId.SONIC_BLAZE: return "Sonic";
+      case SupportedChainId.LINEA_SEPOLIA: return "Linea";
+      case SupportedChainId.ARBITRUM_SEPOLIA: return "Arbitrum";
+      case SupportedChainId.WORLDCHAIN_SEPOLIA: return "Worldchain";
+      case SupportedChainId.OPTIMISM_SEPOLIA: return "Optimism";
+      case SupportedChainId.CODEX_TESTNET: return "Codex";
+      case SupportedChainId.UNICHAIN_SEPOLIA: return "Unichain";
+      case SupportedChainId.POLYGON_AMOY: return "Polygon";
+      case SupportedChainId.SEI_TESTNET: return "Sei";
+      default: return CHAIN_TO_CHAIN_NAME[chainId] || "Unknown";
+    }
+  };
+
   const resetModal = () => {
     setStep("chain");
     setDonationAmount("");
@@ -344,7 +382,9 @@ export default function DonationModal({
             animate={{ opacity: 1, scale: 1, rotateX: 0 }}
             exit={{ opacity: 0, scale: 0.8, rotateX: 15 }}
             transition={{ type: "spring", damping: 20, stiffness: 300 }}
-            className="relative max-w-md w-full"
+            className={`relative w-full ${
+              step === "chain" ? "max-w-4xl" : "max-w-md"
+            }`}
           >
             {/* Ancient Scroll Design */}
             <div
@@ -407,13 +447,27 @@ export default function DonationModal({
                 {step === "chain" && (
                   <>
                     <div className="text-center mb-8">
-                      <h2 className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-2 drop-shadow-sm">
+                      <h2 className="text-3xl font-bold text-gray-900 font-['Cinzel'] mb-4 drop-shadow-sm">
                         Select Chain for USDC Donation
                       </h2>
-                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs italic">
+                      
+                      {/* Circle CCTP v2 Branding */}
+                      <div className="flex items-center justify-center gap-2 mb-4 p-3 bg-white/20 rounded-lg border border-white/30">
+                        <span className="text-gray-700 font-['Cinzel'] text-sm font-medium">Powered by</span>
+                        <div className="flex items-center gap-1">
+                          <img 
+                            src="/chain-logo/circle.png" 
+                            alt="Circle" 
+                            className="w-15 h-10"
+                          />
+                        </div>
+                        <span className="text-gray-700 font-['Cinzel'] text-sm font-medium">CCTP v2 & Paymaster</span>
+                      </div>
+
+                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-sm italic">
                         For: {eventTitle}
                       </div>
-                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-xs">
+                      <div className="mt-2 text-gray-700 font-['Cinzel'] text-sm">
                         Choose your preferred blockchain network
                       </div>
                     </div>
@@ -426,18 +480,28 @@ export default function DonationModal({
                       </div>
                     )}
 
-                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {/* 3-Column Grid Layout */}
+                    <div className="grid grid-cols-3 gap-4 max-h-96 overflow-y-auto">
                       {SUPPORTED_CHAINS.map((chainId) => (
                         <button
                           key={chainId}
                           onClick={() => handleChainSelect(chainId)}
-                          className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-gray-900 font-bold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-['Cinzel'] text-left flex items-center justify-between"
+                          className="bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-gray-900 font-bold p-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] font-['Cinzel'] text-center flex flex-col items-center gap-3 min-h-[100px]"
                         >
-                          <div>
-                            <div className="text-sm font-bold">{CHAIN_TO_CHAIN_NAME[chainId]}</div>
-                            <div className="text-xs text-gray-700">USDC Available</div>
+                          {/* Chain Icon */}
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white/20 p-2">
+                            <img 
+                              src={getChainLogo(chainId)} 
+                              alt={getShortChainName(chainId)} 
+                              className="w-8 h-8 object-contain"
+                            />
                           </div>
-                          <div className="text-xs text-gray-600">→</div>
+                          
+                          {/* Chain Name */}
+                          <div>
+                            <div className="text-sm font-bold leading-tight">{getShortChainName(chainId)}</div>
+                            <div className="text-xs text-gray-600 mt-1">USDC Ready</div>
+                          </div>
                         </button>
                       ))}
                     </div>
