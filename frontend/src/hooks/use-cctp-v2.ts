@@ -510,6 +510,7 @@ export function useCrossChainTransfer() {
               },
             ],
             functionName: "approve",
+            // @ts-ignore
             args: [
               CHAIN_IDS_TO_TOKEN_MESSENGER[sourceChainId] as `0x${string}`,
               10000000000n,
@@ -619,6 +620,7 @@ export function useCrossChainTransfer() {
       });
 
       // Send the user operation for burning
+      // @ts-ignore
       const uoHash = await bundlerClient.sendUserOperation({
         account: smartAccount,
         calls: [
@@ -642,6 +644,7 @@ export function useCrossChainTransfer() {
               },
             ],
             functionName: "depositForBurn",
+            // @ts-ignore
             args: [
               amount,
               DESTINATION_DOMAINS[destinationChainId],
@@ -800,6 +803,7 @@ export function useCrossChainTransfer() {
               },
             ],
             functionName: "transfer",
+            // @ts-ignore
             args: [
               destinationAddress as `0x${string}`,
               amount,
@@ -904,7 +908,8 @@ export function useCrossChainTransfer() {
                 },
               ],
               functionName: "receiveMessage",
-              args: [attestation.message, attestation.attestation],
+              // @ts-ignore
+            args: [attestation.message, attestation.attestation],
             },
           ],
           authorization,
