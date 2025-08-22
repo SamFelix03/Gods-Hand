@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrossChainTransfer } from "../hooks/use-cctp-v2";
 import { SUPPORTED_CHAINS, CHAIN_TO_CHAIN_NAME, SupportedChainId, CHAIN_RPC_URLS } from "../lib/chains";
+import { ethers } from "ethers";
+import { CONTRACT_ADDRESS, CONTRACT_ABI, SEPOLIA_TESTNET_CONFIG } from "../lib/constants";
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -36,6 +38,8 @@ export default function DonationModal({
   const [connectionStatus, setConnectionStatus] = useState<string>("");
   const [usdcBalance, setUsdcBalance] = useState<string>("0");
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
+  const [isRecordingDonation, setIsRecordingDonation] = useState(false);
+  const [donationRecordHash, setDonationRecordHash] = useState<string>("");
   
   // CCTP hook
   const {
@@ -74,13 +78,91 @@ export default function DonationModal({
     loadBalance();
   }, [selectedChain, isWalletConnected, getBalance]);
 
-  // Monitor transfer progress and move to success when completed
+  // Monitor transfer progress and record donation when CCTP completes
   useEffect(() => {
-    if (step === "transfer" && currentStep === "completed") {
-      setStep("success");
-      setConnectionStatus("USDC transfer completed successfully!");
+    if (step === "transfer" && currentStep === "completed" && !isRecordingDonation && !donationRecordHash) {
+      recordDonationOnContract();
     }
-  }, [currentStep, step]);
+  }, [currentStep, step, isRecordingDonation, donationRecordHash]);
+
+  const recordDonationOnContract = async () => {
+    if (!donationAmount || !connectedAddress) return;
+
+    setIsRecordingDonation(true);
+    setConnectionStatus("Recording donation on smart contract...");
+
+    try {
+      // Connect to Ethereum Sepolia
+      const provider = new ethers.JsonRpcProvider(SEPOLIA_TESTNET_CONFIG.rpcUrl);
+      
+      // Use the connected wallet to sign the transaction
+      if (!window.ethereum) {
+        throw new Error("MetaMask not found");
+      }
+
+      // Switch to Sepolia for the contract interaction
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: SEPOLIA_TESTNET_CONFIG.chainId }],
+        });
+      } catch (switchError: any) {
+        // If Sepolia not added, add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: SEPOLIA_TESTNET_CONFIG.chainId,
+              chainName: SEPOLIA_TESTNET_CONFIG.chainName,
+              rpcUrls: [SEPOLIA_TESTNET_CONFIG.rpcUrl],
+              nativeCurrency: SEPOLIA_TESTNET_CONFIG.nativeCurrency,
+            }],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+
+      // Create ethers provider with MetaMask
+      const web3Provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await web3Provider.getSigner();
+      
+      // Create contract instance
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      
+      // Convert USDC amount to proper format (USDC has 6 decimals but we record in contract units)
+      const donationAmountWei = ethers.parseUnits(donationAmount, 6);
+      
+      console.log('Recording donation on contract...');
+      const recordTx = await contract.recordDonation(
+        disasterHash,
+        donationAmountWei,
+        connectedAddress
+      );
+      
+      setConnectionStatus("Waiting for contract confirmation...");
+      await recordTx.wait();
+      
+      setDonationRecordHash(recordTx.hash);
+      setConnectionStatus("Donation recorded on blockchain!");
+      
+      // Move to success step
+      setStep("success");
+      
+      // Refresh donations if callback provided
+      if (refreshDonations) {
+        await refreshDonations();
+      }
+      
+    } catch (error: any) {
+      console.error("Failed to record donation:", error);
+      setConnectionStatus(`Contract recording failed: ${error.message || "Unknown error"}`);
+      // Still move to success since CCTP transfer completed
+      setStep("success");
+    } finally {
+      setIsRecordingDonation(false);
+    }
+  };
 
   const switchToChain = async (chainId: SupportedChainId) => {
     if (!window.ethereum) {
@@ -220,6 +302,8 @@ export default function DonationModal({
     setStep("amount");
     setDonationAmount("");
     setConnectionStatus("");
+    setIsRecordingDonation(false);
+    setDonationRecordHash("");
     reset(); // Reset CCTP hook state
   };
 
@@ -230,6 +314,8 @@ export default function DonationModal({
     setSelectedChain(null);
     setUsdcBalance("0");
     setIsLoadingBalance(false);
+    setIsRecordingDonation(false);
+    setDonationRecordHash("");
     reset(); // Reset CCTP hook state
   };
 
@@ -498,12 +584,13 @@ export default function DonationModal({
                           Current Status:
                         </p>
                         <p className="text-blue-900 font-['Cinzel'] text-sm capitalize">
-                          {currentStep === "idle" ? "Initializing..." : 
+                          {isRecordingDonation ? "Recording donation on smart contract..." :
+                           currentStep === "idle" ? "Initializing..." : 
                            currentStep === "approving" ? "Approving USDC for transfer..." :
                            currentStep === "burning" ? "Burning USDC on source chain..." :
                            currentStep === "waiting-attestation" ? "Waiting for Circle attestation..." :
                            currentStep === "minting" ? "Minting USDC on destination..." :
-                           currentStep === "completed" ? "Transfer completed successfully!" :
+                           currentStep === "completed" ? "Transfer completed - Recording on contract..." :
                            currentStep === "error" ? "Transfer failed" :
                            "Unknown status"}
                         </p>
@@ -658,22 +745,22 @@ export default function DonationModal({
                           Transaction Summary:
                         </p>
                         <div className="space-y-2">
-                          {transactionHashes.approvalTx && (
-                            <div>
-                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">✅ Approval Tx:</p>
-                              <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.approvalTx}</p>
-                            </div>
-                          )}
                           {transactionHashes.burnTx && (
                             <div>
-                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">🔥 Burn Tx:</p>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">🔥 CCTP Burn Tx:</p>
                               <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.burnTx}</p>
                             </div>
                           )}
                           {transactionHashes.mintTx && (
                             <div>
-                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">✨ Mint Tx:</p>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">✨ CCTP Mint Tx:</p>
                               <p className="text-gray-600 font-mono text-xs break-all">{transactionHashes.mintTx}</p>
+                            </div>
+                          )}
+                          {donationRecordHash && (
+                            <div>
+                              <p className="text-gray-700 font-['Cinzel'] text-xs font-semibold">📝 Contract Record Tx:</p>
+                              <p className="text-gray-600 font-mono text-xs break-all">{donationRecordHash}</p>
                             </div>
                           )}
                         </div>

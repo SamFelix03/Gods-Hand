@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import dotenv from "dotenv";
 import { ethers } from "ethers";
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from "./constants";
+import { CONTRACT_ADDRESS, CONTRACT_ABI, SEPOLIA_TESTNET_CONFIG } from "./constants";
 
 
 export function cn(...inputs: ClassValue[]) {
@@ -102,7 +102,7 @@ export function formatFlowAmount(flowAmount: number): string {
   return `${flowAmount.toFixed(6)} FLOW`;
 }
 
-// Flow donation fetching
+// Ethereum Sepolia donation fetching - always connects to Sepolia regardless of wallet chain
 export async function fetchRecentDonations(disasterHash: string): Promise<{
   donor: string;
   amount: string;
@@ -110,24 +110,23 @@ export async function fetchRecentDonations(disasterHash: string): Promise<{
   formattedTime: string;
 }[]> {
   try {
-    if (!window.ethereum) {
-      console.warn("MetaMask not available for fetching donations");
-      return [];
-    }
-
     // Ensure disaster hash has 0x prefix
     let formattedDisasterHash = disasterHash;
     if (!disasterHash.startsWith('0x')) {
       formattedDisasterHash = '0x' + disasterHash;
     }
 
-    // Create provider and contract instance
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    // Always connect directly to Ethereum Sepolia using RPC URL - independent of wallet chain
+    const provider = new ethers.JsonRpcProvider(SEPOLIA_TESTNET_CONFIG.rpcUrl);
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
 
+    console.log(`Fetching donations for disaster hash: ${formattedDisasterHash}`);
+
     try {
-      // Try to get donations using the getDisasterDonations function
+      // Use getDisasterDonations function from the contract (matches test script approach)
       const donations = await contract.getDisasterDonations(formattedDisasterHash);
+      
+      console.log(`Found ${donations.length} donations for disaster`);
       
       return donations.map((donation: any, index: number) => {
         const donor = donation.donor || donation[0];
@@ -137,8 +136,8 @@ export async function fetchRecentDonations(disasterHash: string): Promise<{
         // Format the donor address for privacy (show first 6 and last 4 characters)
         const formattedDonor = `${donor.substring(0, 6)}...${donor.substring(38)}`;
         
-        // Format amount in FLOW
-        const formattedAmount = parseFloat(ethers.formatEther(amount)).toFixed(4);
+        // Format amount in USDC (6 decimals) - donations are recorded in USDC units
+        const formattedAmount = parseFloat(ethers.formatUnits(amount, 6)).toFixed(6);
         
         // Format timestamp
         const date = new Date(Number(timestamp) * 1000);
@@ -146,23 +145,23 @@ export async function fetchRecentDonations(disasterHash: string): Promise<{
         
         return {
           donor: formattedDonor,
-          amount: `${formattedAmount} FLOW`,
+          amount: `$${formattedAmount}`,
           timestamp: timestamp.toString(),
           formattedTime
         };
       });
     } catch (contractError) {
-      console.warn("Contract call failed, trying event logs:", contractError);
+      console.warn("Direct contract call failed, trying event logs:", contractError);
       
-      // Fallback: Try to get recent DonationMade events
+      // Fallback: Try to get recent DonationRecorded events
       const currentBlock = await provider.getBlockNumber();
       const fromBlock = Math.max(0, currentBlock - 10000); // Look back 10k blocks
       
-      // Create event filter for DonationMade events for this disaster
+      // Create event filter for DonationRecorded events for this disaster
       const filter = {
         address: CONTRACT_ADDRESS,
         topics: [
-          ethers.id("DonationMade(bytes32,address,uint256,uint256)"),
+          ethers.id("DonationRecorded(bytes32,address,uint256,uint256,address)"),
           formattedDisasterHash // Filter by disaster hash
         ],
         fromBlock,
@@ -170,9 +169,11 @@ export async function fetchRecentDonations(disasterHash: string): Promise<{
       };
       
       const logs = await provider.getLogs(filter);
+      console.log(`Found ${logs.length} donation events in logs`);
       
       // Parse the logs to extract donation data
-      return logs.map((log, index) => {
+      const parsedDonations = [];
+      for (const log of logs) {
         try {
           const decoded = contract.interface.parseLog(log);
           if (decoded && decoded.args) {
@@ -182,33 +183,31 @@ export async function fetchRecentDonations(disasterHash: string): Promise<{
             // Format the donor address for privacy
             const formattedDonor = `${donor.substring(0, 6)}...${donor.substring(38)}`;
             
-            // Format amount in FLOW
-            const formattedAmount = parseFloat(ethers.formatEther(amount)).toFixed(4);
+            // Format amount in USDC (6 decimals)
+            const formattedAmount = parseFloat(ethers.formatUnits(amount, 6)).toFixed(6);
             
-            // Get block timestamp (this requires another call, so we'll use block number as fallback)
-            const formattedTime = `Block #${log.blockNumber}`;
+            // Get block timestamp for more accurate time
+            const block = await provider.getBlock(log.blockNumber);
+            const timestamp = block ? block.timestamp : Date.now() / 1000;
+            const date = new Date(Number(timestamp) * 1000);
+            const formattedTime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
             
-            return {
+            parsedDonations.push({
               donor: formattedDonor,
-              amount: `${formattedAmount} FLOW`,
-              timestamp: log.blockNumber.toString(),
+              amount: `$${formattedAmount}`,
+              timestamp: timestamp.toString(),
               formattedTime
-            };
+            });
           }
         } catch (parseError) {
           console.warn("Failed to parse log:", parseError);
         }
-        
-        return {
-          donor: "Unknown",
-          amount: "0 FLOW",
-          timestamp: "0",
-          formattedTime: "Unknown"
-        };
-      }).filter(donation => donation.donor !== "Unknown");
+      }
+      
+      return parsedDonations;
     }
   } catch (error) {
-    console.error("Failed to fetch donations:", error);
+    console.error("Failed to fetch donations from Ethereum Sepolia:", error);
     return [];
   }
 }

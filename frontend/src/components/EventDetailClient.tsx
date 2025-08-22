@@ -396,8 +396,8 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
               </div>
             </div>
 
-            {/* Lottery Countdown Component */}
-            <LotteryCountdown event={event} />
+            {/* Lottery Countdown Component
+            <LotteryCountdown event={event} /> */}
 
             {/* Approved Claims Section - Separate Important Section */}
             {claims.filter(claim => claim.claim_state === "approved").length > 0 && (
