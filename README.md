@@ -1,11 +1,15 @@
 # God's Hand
 *"Where Heaven Hears, and Humanity Helps — One Gift at a Time."*
 
-Applied tracks/Sponsors: 
- 1. Decentralized Economies, Governance & Science. (Fresh Code)
- 2. Flow: ⚡️ Most Killer App Potential
- 3. 🧠 Mosaia challenge: Beat ChatGPT - build an AI that uses tools and trusted data to perform 10x better
- 4. ⚡️ WeatherXM Ground the Next Internet in Real-World Signals
+## 🚀 **Implementation Highlights**
+
+We have implemented the following features offered by Circle:
+
+1. **🌐 Multichain USDC Payment System (using CCTP v2)** - The Donations are multichain USDC payments and payouts using Fast Transfers from Circle's Cross-Chain Transfer Protocol V2.
+
+2. **⚡ USDC Gas Payments (using Circle Paymaster)** - Enabled donors to pay for gas using USDC instead of native tokens, creating a unified payment experience across all supported networks.
+
+📖 **For detailed technical implementation, visit: [Circle CCTP v2 & Paymaster Integration Notes](./CIRCLE_INTEGRATION.md)**
 
 ## 📋 **Table of Contents**
 
@@ -20,8 +24,9 @@ Applied tracks/Sponsors:
 
 ### **🔧 Core Integrations**
 - [🤖 Mosaia Integration](#-mosaia-integration)
-- [⛓️ Flow Integration](#️-flow-integration)
+- [📄 Smart Contract Integration](#-smart-contract-integration)
 - [🌤️ WeatherXM Integration](#️-weatherxm-integration)
+- [⭕ Circle CCTP v2 & Paymaster Integration](#-circle-cctp-v2--paymaster-integration)
 
 
 ## 🌟 Introduction
@@ -35,9 +40,7 @@ In a world where natural disasters strike without warning, traditional relief sy
 
 God's Hand transforms this paradigm by deploying **autonomous AI agents** that continuously monitor global events, instantly assess disaster situations, and facilitate **rapid, transparent, and democratically-governed relief funding**.
 
-Powered by **MOSAIA AI agents** relying on **WeatherXM's Weather Data** running on **Phala's Trusted Execution Environments (TEE)** and secured by the **Flow blockchain**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is immutably recorded on the **Flow  blockchain**, governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem that eliminates the systemic failures plaguing traditional relief systems.
-
-**Donor Incentives**: God's Hand introduces the world's first **disaster relief raffle system** powered by **Flow's VRF**. Every donation, regardless of amount, automatically enters donors into a transparent, tamper-proof raffle to win 5% of the total funds raised for each disaster event, creating unprecedented donor engagement and participation incentives.
+Powered by **MOSAIA AI agents** relying on **WeatherXM's Weather Data** running on **Phala's Trusted Execution Environments (TEE)** and secured by **Ethereum blockchain**, our platform ensures complete transparency, trustless operations, and community-driven decision making. Every donation, every claim, and every allocation is immutably recorded on the **Ethereum Sepolia blockchain** via our smart contract, governed by the collective wisdom of verified global citizens, creating a truly decentralized ecosystem that eliminates the systemic failures plaguing traditional relief systems.
 
 
 ## 🚨 The Problems in Current Systems
@@ -52,9 +55,9 @@ Traditional disaster relief platforms fail due to:
 - **Bureaucratic bottlenecks** slow fund distribution
 - **Funds take weeks/months** to reach disaster-affected areas
 
-**3. Zero Donor Incentives**
-- **No rewards** beyond moral satisfaction
-- **No engagement mechanisms** for repeat donations
+**3. Limited Donor Engagement**
+- **No transparency** in fund allocation and impact tracking
+- **No engagement mechanisms** for ongoing participation in relief efforts
 
 
 ## 🔬 Why God's Hand (AI agents + Blockchain) is the Solution?
@@ -71,7 +74,7 @@ Traditional disaster relief platforms fail due to:
 
 ### 🌐 **Transparent Relief Platform**
 - **Verified Disaster Display**: All AI-verified disaster events are showcased in an intuitive frontend interface
-- **Seamless Donation Experience**: User-friendly donation system supporting payments with **$FLOW**
+- **Seamless Donation Experience**: User-friendly donation system supporting cross-chain **USDC** payments via Circle CCTP v2
 - **Real-time Fund Tracking**: Complete transparency in fund collection and allocation progress
 
 ### 🏛️ **Democratic Claim Verification**
@@ -106,8 +109,8 @@ Traditional disaster relief platforms fail due to:
 
 **Phase 2: Analysis & Funding Determination**
 4. **Disaster Analysis Agent** combines news intelligence with weather data to assess disaster severity
-5. **Smart Contract Integration** converts USD funding requirements to FLOW tokens using real-time exchange rates
-6. **Flow Blockchain Deployment** writes disaster data (title, metadata, target_amount) to the GodsHand smart contract.
+5. **Smart Contract Integration** converts USD funding requirements to appropriate funding targets in USDC
+6. **Ethereum Blockchain Deployment** writes disaster data (title, metadata, target_amount) to the GodsHand smart contract on Ethereum Sepolia.
 
 **Phase 3: Public Outreach & Data Storage**
 7. **Tweet Agent** generates and publishes disaster awareness content with funding details and source links to our twitter account @godshandsupport.
@@ -117,7 +120,7 @@ Traditional disaster relief platforms fail due to:
 ### 🔒 **Security & Reliability Features**
 
 - **TEE-Hosted Execution**: All agents run in Trusted Execution Environments for maximum security
-- **Blockchain Immutability**: Disaster data is permanently recorded on Flow blockchain
+- **Blockchain Immutability**: Disaster data is permanently recorded on Ethereum Sepolia blockchain
 - **Multi-Source Verification**: News sources and weather stations provide cross-validation
 - **Automated Failsafes**: Pipeline includes comprehensive error handling and recovery mechanisms
 
@@ -130,11 +133,11 @@ Traditional disaster relief platforms fail due to:
 
 ### 🎯 **Step-by-Step Democratic Process**
 
-#### **Step 1: User Donation & Automatic Raffle Entry**
-1. **FLOW Donation**: Users donate any amount of FLOW tokens through the intuitive DonationModal interface
-2. **Automatic Raffle Entry**: Every donation, regardless of size, automatically enters the donor into the disaster-specific raffle
-3. **72-Hour Timer**: Raffle countdown begins immediately upon disaster creation, ensuring fair participation window
-4. **Transparent Tracking**: All donations are recorded immutably on Flow blockchain with real-time progress updates
+#### **Step 1: User Donation & Blockchain Recording**
+1. **USDC Donation**: Users donate any amount of USDC tokens from any supported blockchain through the intuitive DonationModal interface
+2. **Cross-Chain Transfer**: Circle CCTP v2 facilitates seamless transfer to Ethereum Sepolia destination
+3. **Smart Contract Recording**: All donations are automatically recorded on the GodsHand smart contract
+4. **Transparent Tracking**: All donations are recorded immutably on Ethereum blockchain with real-time progress updates
 
 #### **Step 2: NGO Funding Claims & AI Verification**
 5. **Claim Submission**: Registered NGOs and relief organizations submit detailed funding requests through RequestFundsModal
@@ -162,14 +165,11 @@ Traditional disaster relief platforms fail due to:
     - **Handles amount modifications** by resetting voting process
 12. **Instant Execution**: Approved claims trigger immediate fund transfer to NGO wallets
 
-#### **Step 5: VRF Raffle & Prize Distribution**
-13. **72-Hour Countdown**: Raffle automatically triggers exactly 72 hours after disaster announcement
-14. **Flow VRF Selection**: Flow's Verifiable Random Function ensures:
-    - **Provably fair randomness** for winner selection
-    - **Tamper-proof process** with blockchain verification
-    - **Equal chances** for all donors regardless of donation amount
-15. **Automatic Prize Distribution**: Winner receives 5% of total donated amount instantly
-16. **Public Transparency**: Winner address and transaction hash publicly visible
+#### **Step 5: Transparent Fund Tracking**
+13. **Real-Time Updates**: All fund movements and allocations are tracked transparently on-chain
+14. **Donation Impact**: Donors can see exactly how their contributions are being used for relief efforts
+15. **Public Accountability**: Complete audit trail ensures funds reach intended recipients
+16. **Community Oversight**: Ongoing monitoring and reporting of relief fund effectiveness
 
 
 ## 🤖 **Mosaia Integration**
@@ -270,55 +270,43 @@ God's Hand operates through an **Autonomous AI agent Ecosystem** that transforms
 **📁 Line of Code**: [Twitter Poster Tool](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-TweetPosting-Tool)
 
 
-## ⛓️ **Flow Integration**
+## 📄 **Smart Contract Integration**
 
 ### 📋 **Deployed Contract**
-**🔗 Contract Address**: [Flow Testnet Explorer](https://evm-testnet.flowscan.io/address/0x700D3D55ec6FC21394A43b02496F320E02873114?tab=index)
+**🔗 Contract Address**: [Ethereum Sepolia Etherscan](https://sepolia.etherscan.io/address/0x07f9BFEb19F1ac572f6D69271261dDA1fD378D9A)
+- **Network**: Ethereum Sepolia Testnet
+- **Contract Name**: GodsHand
+- **Deployment**: Verified and fully functional
 
 ### 🏗️ **Smart Contract Architecture**
 
-#### **Key Components**
+#### **Core Functionalities**
 
 ##### **1. Disaster Management**
-- **Disaster Creation**: Agent creates a disaster relief campaign with title, metadata, and target amount
-- **Unique Identification**: Each disaster gets a unique hash based on creator, timestamp, and metadata
-- **Status Control**: Disasters can be activated/deactivated by the Agent
+- **Disaster Creation**: AI agents create disaster relief campaigns with title, metadata, and target funding amount
+- **Unique Identification**: Each disaster gets a unique bytes32 hash for immutable identification
+- **Status Control**: Disasters can be activated/deactivated by authorized accounts
+- **Metadata Storage**: Complete disaster information stored on-chain for transparency
 
 ##### **2. Donation System**
-- **Direct Donations**: Users can donate Flow directly to specific disasters
-- **Contribution Tracking**: Individual donor contributions are tracked per disaster
-- **Funding Progress**: Real-time calculation of funding progress as percentage of target
+- **USDC Donations**: Users can donate USDC directly to specific disasters from any supported blockchain
+- **Cross-Chain Support**: Circle CCTP v2 enables donations from 12+ blockchain networks
+- **Contribution Tracking**: Individual donor contributions are tracked per disaster with timestamps
+- **Funding Progress**: Real-time calculation of funding progress as percentage of target amount
 
-##### **3. Fund Management**
+##### **3. Fund Management & Distribution**
 - **Secure Storage**: All donations are held securely in the smart contract
-- **Controlled Release**: Only the Agent running inside the TEE can unlock funds
-  
-## 🎰 **Gamification Through VRF Raffle**
+- **Democratic Distribution**: Community voting determines fund allocation to verified NGOs
+- **Controlled Release**: Funds released only after community consensus approval
+- **Audit Trail**: Complete transparency with immutable on-chain records
 
-### **The Lottery Experience**
+##### **4. Democratic Governance**
+- **NGO Claims**: Relief organizations can submit funding requests with detailed proposals
+- **Community Voting**: Verified users vote on fund allocation decisions
+- **Consensus Mechanism**: Majority vote determines fund distribution
+- **Transparent Process**: All voting and decisions recorded on-chain
 
-The GodsHand platform introduces a gamification layer that transforms disaster relief from a purely altruistic act into an engaging experience:
-
-#### **🎯 How It Works**
-1. **Donation Entry**: Every donation automatically enters the donor into the lottery
-2. **Unique Participation**: Each unique donor address gets one entry (regardless of donation amount)
-3. **Fair Selection**: VRF ensures truly random winner selection
-4. **Prize Distribution**: Winner receives 5% of the total disaster fund
-5. **Transparency**: All lottery results are publicly verifiable
-
-#### **🔐 VRF Integration Benefits**
-- **Verifiable Randomness**: Cadence Arch provides cryptographically secure random numbers
-- **Fairness**: No manipulation possible by contract owner or disaster creator
-- **Transparency**: Random number generation is publicly verifiable
-- **Decentralization**: Relies on external VRF service, not contract-controlled randomness
-
-#### **🧠 Psychological Impact**
-- **Increased Engagement**: Donors are motivated by the chance to win
-- **Repeated Participation**: Gamification encourages continued donations
-- **Community Building**: Creates excitement and discussion around disaster relief
-- **Viral Potential**: Lottery winners may share their experience, attracting more donors
-
-**📁 Line of Code**: [Flow Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Flow%20contract)
+**📁 Line of Code**: [GodsHand Smart Contract](https://github.com/SamFelix03/Gods-Hand/tree/main/Contract)
 
 
 ## 🌤️ WeatherXM Integration
@@ -351,3 +339,37 @@ The agent heavily relies on this granular, real-time data to:
 
 ## Line of Code
 **📁 Line of Code**: [WeatherXM](https://github.com/SamFelix03/Gods-Hand/tree/main/Mosaia%20tools/Mosaia-Weather-XM-Tool)
+
+## ⭕ **Circle CCTP v2 & Paymaster Integration**
+
+God's Hand leverages Circle's Cross-Chain Transfer Protocol (CCTP) v2 with advanced Paymaster integration to enable seamless, gasless USDC donations across multiple blockchain networks — revolutionizing the cross-chain donation experience.
+
+### 🌐 **Multi-Chain USDC Donation Support**
+
+#### **Supported Networks**
+- **Ethereum Sepolia** - Primary destination chain
+- **Avalanche Fuji** - C-Chain testnet  
+- **Base Sepolia** - Coinbase L2 testnet
+- **Arbitrum Sepolia** - Arbitrum L2 testnet
+- **Optimism Sepolia** - Optimism L2 testnet
+- **Polygon Amoy** - Polygon testnet
+- **Worldchain Sepolia** - Worldcoin L2 testnet
+- **Unichain Sepolia** - Uniswap L2 testnet
+- **Linea Sepolia** - ConsenSys L2 testnet
+- **Sonic Blaze** - Sonic testnet
+- **Codex Testnet** - Codex testnet
+- **Sei Testnet** - Sei testnet
+
+### ⚡ **USDC Gas Payments via EIP-7702 & Paymaster**
+- **Unified Gas Token**: Donors pay all transaction fees using USDC instead of native tokens (ETH, AVAX, etc.)
+- **EIP-7702 Smart Accounts**: Advanced account abstraction for seamless user experience
+- **Automatic Gas Estimation**: Circle API integration for dynamic fee calculation
+- **Bundle Transactions**: Single UserOperation handles approval, burn, attestation, and mint
+
+### 🔄 **Seamless Cross-Chain Flow**
+1. **Source Chain**: USDC approval and burning with USDC-paid gas
+2. **Circle Attestation**: Automatic attestation retrieval from Circle's Iris API
+3. **Destination Chain**: USDC minting on Ethereum Sepolia with paymaster gas coverage
+4. **Smart Contract Recording**: Automatic donation recording on GodsHand contract
+
+**📁 Line of Code**: [Circle CCTP v2 Integration](./src/hooks/use-cctp-v2.ts)
