@@ -133,9 +133,12 @@ export default function DonationModal({
       // Convert USDC amount to proper format (USDC has 6 decimals but we record in contract units)
       const donationAmountWei = ethers.parseUnits(donationAmount, 6);
       
+      // Ensure disasterHash has 0x prefix for bytes32 format
+      const formattedDisasterHash = disasterHash.startsWith('0x') ? disasterHash : `0x${disasterHash}`;
+      
       console.log('Recording donation on contract...');
       const recordTx = await contract.recordDonation(
-        disasterHash,
+        formattedDisasterHash,
         donationAmountWei,
         connectedAddress
       );
