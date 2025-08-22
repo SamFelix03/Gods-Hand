@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-contract GodsHand {
+contract godslite {
     // Struct to store disaster information
     struct Disaster {
         string title;
@@ -23,13 +23,11 @@ contract GodsHand {
     // State variables
     address public owner;
     uint256 public disasterCounter;
-    address constant public cadenceArch = 0x0000000000000000000000010000000000000001;
     
     // Mappings
     mapping(bytes32 => Disaster) public disasters;
     mapping(bytes32 => Donation[]) public disasterDonations;
     mapping(bytes32 => mapping(address => uint256)) public donorContributions;
-    mapping(bytes32 => uint256) public disasterFunds;
     
     // Arrays to keep track of all disasters
     bytes32[] public allDisasterHashes;
@@ -42,29 +40,17 @@ contract GodsHand {
         uint256 targetAmount
     );
     
-    event DonationMade(
+    event DonationRecorded(
         bytes32 indexed disasterHash,
         address indexed donor,
         uint256 amount,
-        uint256 totalDonated
-    );
-    
-    event FundsUnlocked(
-        bytes32 indexed disasterHash,
-        address indexed recipient,
-        uint256 amount,
-        address indexed unlockedBy
+        uint256 totalDonated,
+        address indexed walletAddress
     );
     
     event DisasterStatusChanged(
         bytes32 indexed disasterHash,
         bool isActive
-    );
-    
-    event LotteryWinner(
-        bytes32 indexed disasterHash,
-        address indexed winner,
-        uint256 totalDonors
     );
     
     // Modifiers
@@ -123,9 +109,6 @@ contract GodsHand {
             isActive: true
         });
         
-        // Initialize disaster funds
-        disasterFunds[disasterHash] = 0;
-        
         // Add to all disasters array
         allDisasterHashes.push(disasterHash);
         
@@ -134,47 +117,39 @@ contract GodsHand {
         return disasterHash;
     }
     
-    // Function to donate to a specific disaster
-    function donateToDisaster(bytes32 _disasterHash) 
+    // Function to record a donation to a specific disaster (external funds)
+    function recordDonation(
+        bytes32 _disasterHash,
+        uint256 _amount,
+        address _walletAddress
+    ) 
         public 
-        payable 
         disasterExists(_disasterHash) 
         disasterActive(_disasterHash) 
     {
-        require(msg.value > 0, "Donation amount must be greater than 0");
+        require(_amount > 0, "Donation amount must be greater than 0");
+        require(_walletAddress != address(0), "Invalid wallet address");
         
         // Update disaster total donated
-        disasters[_disasterHash].totalDonated += msg.value;
-        
-        // Update disaster funds pool
-        disasterFunds[_disasterHash] += msg.value;
+        disasters[_disasterHash].totalDonated += _amount;
         
         // Record individual donor contribution
-        donorContributions[_disasterHash][msg.sender] += msg.value;
+        donorContributions[_disasterHash][msg.sender] += _amount;
         
         // Store donation details
         disasterDonations[_disasterHash].push(Donation({
             donor: msg.sender,
-            amount: msg.value,
+            amount: _amount,
             timestamp: block.timestamp
         }));
         
-        emit DonationMade(
+        emit DonationRecorded(
             _disasterHash, 
             msg.sender, 
-            msg.value, 
-            disasters[_disasterHash].totalDonated
+            _amount, 
+            disasters[_disasterHash].totalDonated,
+            _walletAddress
         );
-    }
-    
-    // Function to get total funds for a specific disaster
-    function getDisasterFunds(bytes32 _disasterHash) 
-        public 
-        view 
-        disasterExists(_disasterHash) 
-        returns (uint256) 
-    {
-        return disasterFunds[_disasterHash];
     }
     
     // Function to get disaster details
@@ -234,55 +209,6 @@ contract GodsHand {
         return disasterDonations[_disasterHash].length;
     }
     
-    // Function to unlock funds (only owner can call this)
-    function unlockFunds(
-        bytes32 _disasterHash,
-        uint256 _amount,
-        address payable _recipient
-    ) 
-        public 
-        onlyOwner 
-        disasterExists(_disasterHash) 
-    {
-        require(_recipient != address(0), "Invalid recipient address");
-        require(_amount > 0, "Amount must be greater than 0");
-        require(disasterFunds[_disasterHash] >= _amount, "Insufficient funds in disaster pool");
-        
-        // Deduct amount from disaster funds
-        disasterFunds[_disasterHash] -= _amount;
-        
-        // Transfer funds to recipient
-        _recipient.transfer(_amount);
-        
-        emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
-    }
-    
-    // Function to unlock funds (disaster creator can also unlock)
-    function unlockFundsByCreator(
-        bytes32 _disasterHash,
-        uint256 _amount,
-        address payable _recipient
-    ) 
-        public 
-        disasterExists(_disasterHash) 
-    {
-        require(
-            msg.sender == disasters[_disasterHash].creator, 
-            "Only disaster creator can unlock funds"
-        );
-        require(_recipient != address(0), "Invalid recipient address");
-        require(_amount > 0, "Amount must be greater than 0");
-        require(disasterFunds[_disasterHash] >= _amount, "Insufficient funds in disaster pool");
-        
-        // Deduct amount from disaster funds
-        disasterFunds[_disasterHash] -= _amount;
-        
-        // Transfer funds to recipient
-        _recipient.transfer(_amount);
-        
-        emit FundsUnlocked(_disasterHash, _recipient, _amount, msg.sender);
-    }
-    
     // Function to toggle disaster active status (only owner)
     function toggleDisasterStatus(bytes32 _disasterHash) 
         public 
@@ -303,11 +229,6 @@ contract GodsHand {
         return allDisasterHashes.length;
     }
     
-    // Function to get contract balance
-    function getContractBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-    
     // Function to get disaster funding progress (percentage)
     function getFundingProgress(bytes32 _disasterHash) 
         public 
@@ -323,81 +244,9 @@ contract GodsHand {
         return (totalDonated * 100) / targetAmount;
     }
     
-    // Emergency function to withdraw all funds (only owner)
-    function emergencyWithdraw() public onlyOwner {
-        payable(owner).transfer(address(this).balance);
-    }
-    
     // Function to transfer ownership
     function transferOwnership(address _newOwner) public onlyOwner {
         require(_newOwner != address(0), "Invalid address");
         owner = _newOwner;
-    }
-    
-    // Generate a random number between min and max using Cadence Arch
-    function getRandomInRange(uint64 min, uint64 max) internal view returns (uint64) {
-        // Static call to the Cadence Arch contract's revertibleRandom function
-        (bool ok, bytes memory data) = cadenceArch.staticcall(abi.encodeWithSignature("revertibleRandom()"));
-        require(ok, "Failed to fetch a random number through Cadence Arch");
-        uint64 randomNumber = abi.decode(data, (uint64));
-        // Return the number in the specified range
-        return (randomNumber % (max + 1 - min)) + min;
-    }
-    
-    // Lottery function to select a random winner from disaster donors and send 5% of funds
-    function lottery(bytes32 _disasterHash) 
-        public 
-        disasterExists(_disasterHash) 
-        returns (address) 
-    {
-        // Get all donations for this disaster
-        Donation[] memory donations = disasterDonations[_disasterHash];
-        require(donations.length > 0, "No donors found for this disaster");
-        require(disasterFunds[_disasterHash] > 0, "No funds available in disaster pool");
-        
-        // Create array of unique donors
-        address[] memory uniqueDonors = new address[](donations.length);
-        uint256 uniqueCount = 0;
-        
-        // Find unique donors
-        for (uint256 i = 0; i < donations.length; i++) {
-            bool isUnique = true;
-            for (uint256 j = 0; j < uniqueCount; j++) {
-                if (uniqueDonors[j] == donations[i].donor) {
-                    isUnique = false;
-                    break;
-                }
-            }
-            if (isUnique) {
-                uniqueDonors[uniqueCount] = donations[i].donor;
-                uniqueCount++;
-            }
-        }
-        
-        // Generate random number to select winner
-        uint64 randomIndex = getRandomInRange(0, uint64(uniqueCount - 1));
-        address winner = uniqueDonors[randomIndex];
-        
-        // Calculate 5% of disaster funds
-        uint256 prizeAmount = (disasterFunds[_disasterHash] * 5) / 100;
-        
-        // Ensure there are sufficient funds
-        require(prizeAmount > 0, "Prize amount is zero");
-        
-        // Deduct prize amount from disaster funds
-        disasterFunds[_disasterHash] -= prizeAmount;
-        
-        // Transfer 5% of funds to winner
-        payable(winner).transfer(prizeAmount);
-        
-        // Emit lottery winner event
-        emit LotteryWinner(_disasterHash, winner, uniqueCount);
-        
-        return winner;
-    }
-    
-    // Fallback function to receive Ether
-    receive() external payable {
-        // This allows the contract to receive Ether directly
     }
 }
