@@ -729,6 +729,112 @@ export function useCrossChainTransfer() {
     }
   };
 
+  // Direct USDC transfer for same-chain operations (ETH Sepolia to ETH Sepolia)
+  const directUSDCTransfer = async (
+    sourceChainId: number,
+    amount: bigint,
+    destinationAddress: string,
+  ) => {
+    setCurrentStep("approving");
+    addLog("Executing direct USDC transfer (same chain)...");
+
+    try {
+      if (!senderPrivateKey) {
+        throw new Error("Please enter your private key");
+      }
+
+      // Create 7702 smart account using entered private key
+      const publicClient = createPublicClient({
+        chain: chains[sourceChainId as keyof typeof chains],
+        transport: http(),
+      });
+      
+      const { account: smartAccount, owner } = await create7702SmartAccount({
+        privateKey: senderPrivateKey,
+        client: publicClient,
+      });
+
+      addLog(`Smart Account Address: ${smartAccount.address}`);
+      addLog(`Transferring ${formatUnits(amount, DEFAULT_DECIMALS)} USDC to: ${destinationAddress}`);
+
+      // Create paymaster configuration for USDC gas payment
+      const paymaster = createPaymasterConfig({
+        usdcAddress: CHAIN_IDS_TO_USDC_ADDRESSES[sourceChainId] as `0x${string}`,
+        account: smartAccount,
+        client: publicClient,
+      });
+
+      // Create bundler client with paymaster
+      const bundlerClient = createBundlerClientWithPaymaster({
+        account: smartAccount,
+        client: publicClient,
+        paymaster,
+      });
+
+      // EIP-7702 authorization for this nonce window
+      const authorization = await owner.signAuthorization({
+        chainId: publicClient.chain.id,
+        nonce: await publicClient.getTransactionCount({ address: owner.address }),
+        contractAddress: smartAccount.authorization.address,
+      });
+
+      addLog("Sending direct USDC transfer with USDC gas payment...");
+
+      // Send the user operation for direct transfer
+      // @ts-ignore
+      const uoHash = await bundlerClient.sendUserOperation({
+        account: smartAccount,
+        calls: [
+          {
+            to: CHAIN_IDS_TO_USDC_ADDRESSES[sourceChainId] as `0x${string}`,
+            abi: [
+              {
+                type: "function",
+                name: "transfer",
+                stateMutability: "nonpayable",
+                inputs: [
+                  { name: "to", type: "address" },
+                  { name: "amount", type: "uint256" },
+                ],
+                outputs: [{ name: "", type: "bool" }],
+              },
+            ],
+            functionName: "transfer",
+            args: [
+              destinationAddress as `0x${string}`,
+              amount,
+            ],
+          },
+        ],
+        authorization,
+      });
+
+      addLog(`Direct transfer UserOperation hash: ${uoHash}`);
+      
+      // Wait for inclusion
+      const receipt = await bundlerClient.waitForUserOperationReceipt({ hash: uoHash });
+      const transferHash = receipt.receipt.transactionHash;
+      
+      // Store the transaction hash
+      setTransactionHashes(prev => ({ ...prev, burnTx: transferHash }));
+      
+      addLog(`Direct transfer transaction hash: ${transferHash}`);
+      
+      if (receipt.success) {
+        setCurrentStep("completed");
+        addLog("Direct USDC transfer completed successfully!");
+      } else {
+        throw new Error("Direct USDC transfer failed");
+      }
+      
+      return transferHash;
+    } catch (err) {
+      setError("Direct transfer failed");
+      addLog(`Direct transfer error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      throw err;
+    }
+  };
+
   const mintUSDC = async (
     client: WalletClient<HttpTransport, Chain, Account>,
     destinationChainId: number,
@@ -859,6 +965,16 @@ export function useCrossChainTransfer() {
       
       addLog(`Processing transfer: ${amount} USDC (${numericAmount} wei)`);
       addLog(`Source: ${CHAIN_TO_CHAIN_NAME[sourceChainId]}, Destination: ${CHAIN_TO_CHAIN_NAME[destinationChainId]}`);
+
+      // Special case: If source is Ethereum Sepolia, do direct token transfer
+      if (sourceChainId === SupportedChainId.ETH_SEPOLIA) {
+        addLog("Source is Ethereum Sepolia - performing direct USDC transfer");
+        if (!destinationAddress) {
+          throw new Error("Destination address is required for direct transfer");
+        }
+        await directUSDCTransfer(sourceChainId, numericAmount, destinationAddress);
+        return;
+      }
 
       let sourceClient: any, destinationClient: any, finalDestination: string;
 
