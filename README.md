@@ -96,7 +96,7 @@ Traditional disaster relief platforms fail due to:
 
 ### 🔄 **Complete Workflow: From Detection to Deployment**
 
-<img width="1401" alt="Workflow Diagram" src="https://github.com/user-attachments/assets/a13c0ab3-7f7b-4a31-948f-e8952900300a" />
+<img width="1469" height="751" alt="Donation Flow Diagram" src="https://github.com/user-attachments/assets/34d3cc0c-ad07-48cf-a5dc-9edc9b8244af" />
 
 
 
@@ -127,8 +127,9 @@ Traditional disaster relief platforms fail due to:
 ## 🗳️ The Democratic Verification & Distribution Pipeline
 
 ### 🔄 **Complete User Journey: From Donation to Distribution**
+<img width="1469" height="751" alt="Screenshot 2025-08-23 at 1 35 08 AM" src="https://github.com/user-attachments/assets/89f8098a-ea56-4cb4-a747-102c33d0313c" />
 
-<img width="1436" alt="Screenshot 2025-07-06 at 4 02 10 AM" src="https://github.com/user-attachments/assets/1b1d4fc0-8ead-493c-a924-7b9b15c164be" />
+<img width="1469" height="751" alt="Screenshot 2025-08-23 at 1 35 36 AM" src="https://github.com/user-attachments/assets/f43a8d06-e390-4539-b577-0f706c6763ef" />
 
 
 ### 🎯 **Step-by-Step Democratic Process**
