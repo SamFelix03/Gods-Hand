@@ -372,4 +372,7 @@ God's Hand leverages Circle's Cross-Chain Transfer Protocol (CCTP) v2 with advan
 3. **Destination Chain**: USDC minting on Ethereum Sepolia with paymaster gas coverage
 4. **Smart Contract Recording**: Automatic donation recording on GodsHand contract
 
-**📁 Line of Code**: [Circle CCTP v2 Integration](./src/hooks/use-cctp-v2.ts)
+### **Important Files**
+- **CCTP Integration**: [`src/hooks/use-cctp-v2.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/hooks/use-cctp-v2.ts)
+- **Paymaster**: [`src/lib/paymaster.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/lib/paymaster.ts)
+- **Chains Configuration**: [`src/lib/chains.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/lib/chains.ts)
