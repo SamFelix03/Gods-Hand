@@ -3,9 +3,9 @@
 *Detailed technical documentation for Circle's Cross-Chain Transfer Protocol v2 integration with advanced Paymaster capabilities in God's Hand*
 
 ### **Important Files**
-- **CCTP Integration**: [`src/hooks/use-cctp-v2.ts`](./src/hooks/use-cctp-v2.ts)
-- **Paymaster**: [`src/lib/paymaster.ts`](./src/lib/paymaster.ts)
-- **Chains Configuration**: [`src/lib/chains.ts`](./src/lib/chains.ts)
+- **CCTP Integration**: [`src/hooks/use-cctp-v2.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/hooks/use-cctp-v2.ts)
+- **Paymaster**: [`src/lib/paymaster.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/lib/paymaster.ts)
+- **Chains Configuration**: [`src/lib/chains.ts`](https://github.com/SamFelix03/Gods-Hand/blob/main/frontend/src/lib/chains.ts)
 
 ## 📋 Table of Contents
 
