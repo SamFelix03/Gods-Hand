@@ -39,7 +39,7 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'https://b1577a5c6a5c848419d417b6bb85e12ce9acdf08-3000.dstack-prod8.phala.network',
+        target: 'https://0ebd5cf57dc7.ngrok-free.app',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, _options) => {

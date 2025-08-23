@@ -441,7 +441,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                         {claim.claims_hash && (
                           <div className="mb-4">
                             <a
-                              href={`https://evm-testnet.flowscan.io/tx/0x${claim.claims_hash}`}
+                              href={`https://sepolia.etherscan.io/tx/0x${claim.claims_hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors font-['Cinzel'] inline-flex items-center"
@@ -813,7 +813,7 @@ export default function EventDetailClient({ eventId }: EventDetailClientProps) {
                             {claim.claims_hash && (
                               <div className="mb-4">
                                 <a
-                                  href={`https://evm-testnet.flowscan.io/tx/0x${claim.claims_hash}`}
+                                  href={`https://sepolia.etherscan.io/tx/0x${claim.claims_hash}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-xs transition-colors font-['Cinzel'] inline-flex items-center"

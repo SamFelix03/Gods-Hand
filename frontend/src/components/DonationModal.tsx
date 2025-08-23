@@ -85,50 +85,27 @@ export default function DonationModal({
     }
   }, [currentStep, step, isRecordingDonation, donationRecordHash]);
 
-  const recordDonationOnContract = async () => {
+    const recordDonationOnContract = async () => {
     if (!donationAmount || !connectedAddress) return;
 
     setIsRecordingDonation(true);
     setConnectionStatus("Recording donation on smart contract...");
 
     try {
-      // Connect to Ethereum Sepolia
+      // Connect to Ethereum Sepolia using the hardcoded gas payer private key
       const provider = new ethers.JsonRpcProvider(SEPOLIA_TESTNET_CONFIG.rpcUrl);
       
-      // Use the connected wallet to sign the transaction
-      if (!window.ethereum) {
-        throw new Error("MetaMask not found");
+      // Get the gas payer private key from environment variables
+      const gasPayerKey = import.meta.env.VITE_DESTINATION_GAS_PAYER_PRIVATE_KEY;
+      if (!gasPayerKey) {
+        throw new Error("Gas payer private key not found in environment variables");
       }
-
-      // Switch to Sepolia for the contract interaction
-      try {
-        await window.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: SEPOLIA_TESTNET_CONFIG.chainId }],
-        });
-      } catch (switchError: any) {
-        // If Sepolia not added, add it
-        if (switchError.code === 4902) {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-              chainId: SEPOLIA_TESTNET_CONFIG.chainId,
-              chainName: SEPOLIA_TESTNET_CONFIG.chainName,
-              rpcUrls: [SEPOLIA_TESTNET_CONFIG.rpcUrl],
-              nativeCurrency: SEPOLIA_TESTNET_CONFIG.nativeCurrency,
-            }],
-          });
-        } else {
-          throw switchError;
-        }
-      }
-
-      // Create ethers provider with MetaMask
-      const web3Provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await web3Provider.getSigner();
       
-      // Create contract instance
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      // Create wallet instance with the gas payer private key
+      const gasPayerWallet = new ethers.Wallet(gasPayerKey, provider);
+      
+      // Create contract instance with the gas payer wallet
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, gasPayerWallet);
       
       // Convert USDC amount to proper format (USDC has 6 decimals but we record in contract units)
       const donationAmountWei = ethers.parseUnits(donationAmount, 6);
@@ -136,7 +113,7 @@ export default function DonationModal({
       // Ensure disasterHash has 0x prefix for bytes32 format
       const formattedDisasterHash = disasterHash.startsWith('0x') ? disasterHash : `0x${disasterHash}`;
       
-      console.log('Recording donation on contract...');
+      console.log('Recording donation on contract using gas payer wallet...');
       const recordTx = await contract.recordDonation(
         formattedDisasterHash,
         donationAmountWei,

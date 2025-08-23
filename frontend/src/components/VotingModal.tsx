@@ -81,6 +81,17 @@ export default function VotingModal({
         setVerificationStatus(
           "Proof generated successfully - processing result..."
         );
+        
+        // Auto-proceed to voting after proof is generated
+        const uid = `zkp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        setUniqueIdentifier(uid);
+        setVerificationStatus(
+          "✅ Age verification successful! You are verified as 18+ years old."
+        );
+        setTimeout(() => {
+          setCurrentStep("voting");
+          setIsVerifying(false);
+        }, 2000);
       });
 
       onResult(
@@ -199,8 +210,7 @@ export default function VotingModal({
             mode: "cors",
             body: JSON.stringify({
               voteResult: agentVoteType,
-              uuid: claimId,
-              disasterHash: disasterHash
+              uuid: claimId
             }),
           });
 

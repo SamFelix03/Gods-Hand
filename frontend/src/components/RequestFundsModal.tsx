@@ -468,9 +468,6 @@ export default function RequestFundsModal({
         <p className="text-2xl font-bold text-gray-900 font-['Cinzel'] mb-4">
           ${apiResponse?.amount?.toLocaleString()} USD
         </p>
-        <p className="text-lg text-gray-700 font-['Cinzel']">
-          (≈ {apiResponse?.flow_balance?.toFixed(2)} FLOW)
-        </p>
       </div>
 
       <div className="bg-white/30 backdrop-blur-sm rounded-xl p-6 border border-amber-600/30">
