@@ -2,6 +2,11 @@
 
 *Detailed technical documentation for Circle's Cross-Chain Transfer Protocol v2 integration with advanced Paymaster capabilities in God's Hand*
 
+### **Important Files**
+- **CCTP Integration**: [`src/hooks/use-cctp-v2.ts`](./src/hooks/use-cctp-v2.ts)
+- **Paymaster**: [`src/lib/paymaster.ts`](./src/lib/paymaster.ts)
+- **Chains Configuration**: [`src/lib/chains.ts`](./src/lib/chains.ts)
+
 ## 📋 Table of Contents
 
 ### **⚙️ Technical Implementation**
@@ -717,12 +722,6 @@ Traditional cross-border payments can take days or weeks. CCTP v2 enables:
 - **Circle Iris API**: `https://iris-api-sandbox.circle.com`
 - **Fee Estimation**: `/v2/burn/USDC/fees/{sourceDomain}/{destinationDomain}`
 - **Attestation Service**: `/v2/messages/{sourceDomain}?transactionHash={txHash}`
-
-### **Development Resources**
-- **GitHub Repository**: [God's Hand Frontend](https://github.com/SamFelix03/Gods-Hand/tree/main/frontend)
-- **CCTP Integration**: [`src/hooks/use-cctp-v2.ts`](./src/hooks/use-cctp-v2.ts)
-- **Paymaster Library**: [`src/lib/paymaster.ts`](./src/lib/paymaster.ts)
-- **Chain Configuration**: [`src/lib/chains.ts`](./src/lib/chains.ts)
 
 ---
 
