@@ -32,7 +32,7 @@ export default function DonationModal({
   disasterHash,
   refreshDonations,
 }: DonationModalProps) {
-  const [step, setStep] = useState<"chain" | "amount" | "transfer" | "success">("chain");
+  const [step, setStep] = useState<"privatekey" | "chain" | "amount" | "transfer" | "success">("privatekey");
   const [selectedChain, setSelectedChain] = useState<SupportedChainId | null>(null);
   const [donationAmount, setDonationAmount] = useState<string>("");
   const [connectionStatus, setConnectionStatus] = useState<string>("");
@@ -40,6 +40,7 @@ export default function DonationModal({
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isRecordingDonation, setIsRecordingDonation] = useState(false);
   const [donationRecordHash, setDonationRecordHash] = useState<string>("");
+  const [userPrivateKey, setUserPrivateKey] = useState<string>("");
   
   // CCTP hook
   const {
@@ -57,6 +58,17 @@ export default function DonationModal({
     setSenderPrivateKey,
     transactionHashes,
   } = useCrossChainTransfer();
+
+  // Update the hook's private key when user enters it
+  const handlePrivateKeySubmit = () => {
+    if (!userPrivateKey || userPrivateKey.length < 64) {
+      setConnectionStatus("Please enter a valid private key (64 characters)");
+      return;
+    }
+    setSenderPrivateKey(userPrivateKey);
+    setStep("chain");
+    setConnectionStatus("");
+  };
 
   // Load USDC balance when chain or wallet changes
   useEffect(() => {
@@ -268,7 +280,9 @@ export default function DonationModal({
   };
 
   const handleBack = () => {
-    if (step === "amount") {
+    if (step === "chain") {
+      setStep("privatekey");
+    } else if (step === "amount") {
       setStep("chain");
     } else if (step === "transfer") {
       setStep("amount");
@@ -326,7 +340,7 @@ export default function DonationModal({
   };
 
   const resetModal = () => {
-    setStep("chain");
+    setStep("privatekey");
     setDonationAmount("");
     setConnectionStatus("");
     setSelectedChain(null);
@@ -334,6 +348,7 @@ export default function DonationModal({
     setIsLoadingBalance(false);
     setIsRecordingDonation(false);
     setDonationRecordHash("");
+    setUserPrivateKey("");
     reset(); // Reset CCTP hook state
   };
 
@@ -402,7 +417,7 @@ export default function DonationModal({
                 </button>
 
                 {/* Back Button */}
-                {(step === "amount" || step === "transfer" || step === "success") && (
+                {(step === "chain" || step === "amount" || step === "transfer" || step === "success") && (
                   <button
                     onClick={handleBack}
                     className="absolute top-4 left-4 text-amber-900 hover:text-black transition-colors"
@@ -423,7 +438,80 @@ export default function DonationModal({
                   </button>
                 )}
 
-                {/* Step 1: Chain Selection */}
+                {/* Step 1: Private Key Input */}
+                {step === "privatekey" && (
+                  <>
+                    <div className="text-center mb-8">
+                      <h2 className="text-3xl font-bold text-gray-900 font-['Cinzel'] mb-4 drop-shadow-sm">
+                        Enter Private Key
+                      </h2>
+                      
+                      <div className="mt-2 text-gray-800 font-['Cinzel'] text-sm italic">
+                        For: {eventTitle}
+                      </div>
+                    </div>
+
+                    {/* Important Notice */}
+                    <div className="mb-6 p-4 bg-blue-100/30 rounded-lg border border-blue-200/50">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-6 h-6 text-blue-600 mt-0.5">
+                          <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-blue-900 font-['Cinzel'] text-sm font-bold mb-2">
+                            USDC Gas Payment Notice
+                          </p>
+                          <p className="text-blue-800 font-['Cinzel'] text-xs leading-relaxed">
+                            For implementing <strong>USDC gas payments using Circle Paymaster</strong>, only <strong>"Local Accounts"</strong> (accounts from private key/mnemonic) are currently supported. 
+                            JSON-RPC accounts (MetaMask) are not yet supported.
+                          </p>
+                          <p className="text-blue-800 font-['Cinzel'] text-xs leading-relaxed mt-2">
+                            For demonstration of USDC gas functionality, please enter your private key. 
+                            We will implement MetaMask wallet (JSON-RPC) based smart accounts when supported in the future.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {connectionStatus && (
+                      <div className="mb-6 p-3 bg-amber-200/70 rounded-lg border border-amber-600/50">
+                        <p className="text-gray-900 font-['Cinzel'] text-sm text-center font-medium">
+                          {connectionStatus}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mb-6">
+                      <label className="block text-gray-900 font-['Cinzel'] font-bold mb-3 text-lg">
+                        Private Key
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          value={userPrivateKey}
+                          onChange={(e) => setUserPrivateKey(e.target.value)}
+                          placeholder="Enter your private key (64 hex characters)"
+                          className="w-full px-4 py-4 bg-white/20 backdrop-blur-sm border-2 border-amber-600/50 rounded-xl text-gray-900 font-['Cinzel'] text-sm font-mono placeholder-gray-600 focus:outline-none focus:border-amber-700 focus:bg-white/30 transition-all"
+                        />
+                      </div>
+                      <div className="mt-2 text-xs text-gray-700 font-['Cinzel']">
+                        Your private key is used locally for USDC gas payments and is never stored.
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handlePrivateKeySubmit}
+                      disabled={!userPrivateKey || userPrivateKey.length < 64}
+                      className="w-full bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 disabled:bg-gray-400/20 disabled:border-gray-400/30 disabled:text-gray-500 text-gray-900 font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none font-['Cinzel']"
+                    >
+                      Continue to Chain Selection
+                    </button>
+                  </>
+                )}
+
+                {/* Step 2: Chain Selection */}
                 {step === "chain" && (
                   <>
                     <div className="text-center mb-8">
@@ -488,7 +576,7 @@ export default function DonationModal({
                   </>
                 )}
 
-                {/* Step 2: Amount Input */}
+                {/* Step 3: Amount Input */}
                 {step === "amount" && (
                   <>
                     <div className="text-center mb-8">
@@ -572,7 +660,7 @@ export default function DonationModal({
                   </>
                 )}
 
-                {/* Step 3: Transfer Progress */}
+                {/* Step 4: Transfer Progress */}
                 {step === "transfer" && (
                   <>
                     <div className="text-center mb-6">
@@ -728,7 +816,7 @@ export default function DonationModal({
                   </>
                 )}
 
-                {/* Step 4: Success Screen */}
+                {/* Step 5: Success Screen */}
                 {step === "success" && (
                   <>
                     <div className="text-center mb-8">

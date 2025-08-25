@@ -205,9 +205,7 @@ export function useCrossChainTransfer() {
   const [error, setError] = useState<string | null>(null);
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
   const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [senderPrivateKey, setSenderPrivateKey] = useState<string>(
-    import.meta.env.VITE_EVM_PRIVATE_KEY || import.meta.env.VITE_PRIVATE_KEY || ""
-  );
+  const [senderPrivateKey, setSenderPrivateKey] = useState<string>("");
   const [transactionHashes, setTransactionHashes] = useState<TransactionHashes>({});
 
   const DEFAULT_DECIMALS = 6;
@@ -270,15 +268,12 @@ export function useCrossChainTransfer() {
 
   // Utility function to get the appropriate private key for a chain
   const getPrivateKeyForChain = (chainId: number): string => {
-    const evmKey =
-      import.meta.env.VITE_EVM_PRIVATE_KEY ||
-      import.meta.env.VITE_PRIVATE_KEY;
-    if (!evmKey) {
+    if (!senderPrivateKey) {
       throw new Error(
-        "EVM private key not found. Please set VITE_EVM_PRIVATE_KEY in your environment.",
+        "Private key not provided. Please enter your private key in the donation modal.",
       );
     }
-    return evmKey;
+    return senderPrivateKey;
   };
 
   // Utility function to get the gas payer private key for destination chain (Ethereum Sepolia)
